@@ -52,8 +52,8 @@ class MOTNDP(gym.Env):
             7: np.array([-1, -1]),
         }
 
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
+        # assert render_mode is None or render_mode in self.metadata["render_modes"]
+        # self.render_mode = render_mode
 
         """
         If human-rendering is used, `self.window` will be a reference
@@ -97,8 +97,8 @@ class MOTNDP(gym.Env):
 
         observation = self._get_obs()
 
-        if self.render_mode == "human":
-            self._render_frame()
+        # if self.render_mode == "human":
+        #     self._render_frame()
 
         return observation
     
@@ -124,8 +124,8 @@ class MOTNDP(gym.Env):
         self._agent_location = new_location
         observation = self._get_obs()
 
-        if self.render_mode == "human":
-            self._render_frame()
+        # if self.render_mode == "human":
+        #     self._render_frame()
 
         return observation, reward, terminated
 
