@@ -2,7 +2,7 @@ import numpy as np
 
 import gymnasium as gym
 from gymnasium import spaces
-from city import City
+from motndp.city import City
 
 
 class MOTNDP(gym.Env):
@@ -68,6 +68,9 @@ class MOTNDP(gym.Env):
     def _get_obs(self):
         return {"agent": self._agent_location}
     
+    def _get_info(self):
+        return {}
+    
     def _calculate_reward(self, segment, use_pct=True):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
@@ -123,9 +126,11 @@ class MOTNDP(gym.Env):
 
         self._agent_location = new_location
         observation = self._get_obs()
+        info  = self._get_info()
 
         # if self.render_mode == "human":
         #     self._render_frame()
 
-        return observation, reward, terminated
+        # We return the observation, the reward, whether the episode is done, truncated=False and no info
+        return observation, reward, terminated, False, info
 

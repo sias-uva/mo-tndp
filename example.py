@@ -1,6 +1,12 @@
 from pathlib import Path
-from city import City
-from mo_tndp import MOTNDP
+from motndp.city import City
+import gymnasium
+from gymnasium.envs.registration import register
+
+register(
+    id="motndp_dilemma-v0",
+    entry_point="motndp.motndp:MOTNDP"
+)
 
 if __name__ == '__main__':
     dilemma_dir = Path(f"./cities/dilemma_5x5")
@@ -15,14 +21,14 @@ if __name__ == '__main__':
     nr_stations = 9 # essentially steps in the episode
     seed = 42
     
-    env = MOTNDP(city, nr_stations)
+    env = gymnasium.make('motndp_dilemma-v0', city=city, nr_stations=nr_stations)
     training_step = 0
     for _ in range(nr_episodes):
         state = env.reset(seed=seed)
         while True:
             # Implement the agent policy here
             action = env.action_space.sample()
-            new_state, reward, done = env.step(action)
+            new_state, reward, done, _, _ = env.step(action)
 
             training_step += 1
             print(f'step {training_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
@@ -32,4 +38,4 @@ if __name__ == '__main__':
 
             state = new_state
 
-    print('all done')
+    print('all good')
