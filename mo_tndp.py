@@ -9,8 +9,10 @@ class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {}
 
-    def __init__(self, city: City, render_mode=None):
+    def __init__(self, city: City, nr_stations: int, render_mode=None):
         self.city = city
+        self.nr_stations = nr_stations
+        self.stations_placed = 0
         # size of the grid
         # self.grid_size = self.city.grid_size
         # self.size = size  # The size of the square grid
@@ -91,6 +93,7 @@ class MOTNDP(gym.Env):
         agent_x = self.np_random.integers(0, self.city.grid_x_size)
         agent_y = self.np_random.integers(0, self.city.grid_y_size)
         self._agent_location = np.array([agent_x, agent_y])
+        self.stations_placed = 0
 
         observation = self._get_obs()
 
@@ -100,6 +103,7 @@ class MOTNDP(gym.Env):
         return observation
     
     def step(self, action):
+        self.stations_placed += 1
         # Map the action to the direction we walk in
         direction = self._action_to_direction[action]
         # We use `np.clip` to make sure we don't leave the grid
@@ -110,12 +114,12 @@ class MOTNDP(gym.Env):
         # If we leave the grid, we stay in the same place
         if np.any((new_location < 0) | (new_location[0] > self.city.grid_x_size - 1) | ((new_location[1] > self.city.grid_y_size - 1))):
             new_location = self._agent_location
-    
+
         # We add a new dimension to the agent's location to match grid_to_vector's generalization
         segment = np.array([self.city.grid_to_vector(self._agent_location[None, :]).item(), self.city.grid_to_vector(new_location[None, :]).item()])
         reward = self._calculate_reward(segment)
         # An episode is done iff the agent has reached the target
-        terminated = False
+        terminated = self.stations_placed >= self.nr_stations
 
         self._agent_location = new_location
         observation = self._get_obs()
