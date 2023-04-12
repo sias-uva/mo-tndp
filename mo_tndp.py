@@ -66,6 +66,23 @@ class MOTNDP(gym.Env):
     def _get_obs(self):
         return {"agent": self._agent_location}
     
+    def _calculate_reward(self, segment, use_pct=True):
+        assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
+
+        sat_od_mask = self.city.satisfied_od_mask(segment)
+        sat_group_ods = np.zeros(len(self.city.group_od_mx))
+        sat_group_ods_pct = np.zeros(len(self.city.group_od_mx))
+        for i, g_od in enumerate(self.city.group_od_mx):
+            sat_group_ods[i] = (g_od * sat_od_mask).sum().item()
+            sat_group_ods_pct[i] = sat_group_ods[i] / g_od.sum()
+
+        if use_pct:
+            group_rw = sat_group_ods_pct
+        else:
+            group_rw = sat_group_ods
+        
+        return group_rw
+    
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
@@ -86,13 +103,21 @@ class MOTNDP(gym.Env):
         # Map the action to the direction we walk in
         direction = self._action_to_direction[action]
         # We use `np.clip` to make sure we don't leave the grid
-        self._agent_location = np.array([
-            np.clip(self._agent_location[0] + direction[0], 0, self.city.grid_x_size - 1),
-            np.clip(self._agent_location[1] + direction[1], 0, self.city.grid_y_size - 1)
+        new_location = np.array([
+            self._agent_location[0] + direction[0],
+            self._agent_location[1] + direction[1]
         ])
+        # If we leave the grid, we stay in the same place
+        if np.any((new_location < 0) | (new_location[0] > self.city.grid_x_size - 1) | ((new_location[1] > self.city.grid_y_size - 1))):
+            new_location = self._agent_location
+    
+        # We add a new dimension to the agent's location to match grid_to_vector's generalization
+        segment = np.array([self.city.grid_to_vector(self._agent_location[None, :]).item(), self.city.grid_to_vector(new_location[None, :]).item()])
+        reward = self._calculate_reward(segment)
         # An episode is done iff the agent has reached the target
         terminated = False
-        reward = 1
+
+        self._agent_location = new_location
         observation = self._get_obs()
 
         if self.render_mode == "human":

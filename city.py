@@ -1,6 +1,7 @@
 import configparser
 import json
 import numpy as np
+import itertools
 
 def matrix_from_file(path, size_x, size_y):
     """Reads a grid file that is structured as idx1,idx2,weight and creates a matrix representation of it.
@@ -107,7 +108,8 @@ class City(object):
             torch.Tensor: mask of self.grid_size * self.grid_size of satisfied OD flows.
         """
         # Satisfied OD pairs from the new line, only considering the new line od demand.
-        sat_od_pairs = np.combinations(tour_idx.flatten(), 2)
+        # sat_od_pairs = np.combinations(tour_idx.flatten(), 2)
+        sat_od_pairs = np.array(list(itertools.combinations(tour_idx.flatten(), 2)))
 
         # Satisfied OD pairs from the new line, by considering connections to existing lines.
         # For each line, we look for intersections to the existing lines (full, not only grids with stations).
@@ -135,7 +137,7 @@ class City(object):
                 sat_od_pairs = np.cat((sat_od_pairs, conn_sat_od_pairs))
         
         # Calculate a mask over the OD matrix, based on the satisfied OD pairs.
-        od_mask = np.zeros(self.grid_size, self.grid_size).byte()
+        od_mask = np.zeros((self.grid_size, self.grid_size))
         od_mask[sat_od_pairs[:, 0], sat_od_pairs[:, 1]] = 1
         
         return od_mask

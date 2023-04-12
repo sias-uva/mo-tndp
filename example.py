@@ -17,7 +17,7 @@ if __name__ == '__main__':
             action = env.action_space.sample()
             new_state, reward, done = env.step(action)
 
-            print(f'step {i}, state: {state}, action: {action}, new_state: {new_state}')
+            print(f'step {i}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
 
             state = new_state
         print(state)
