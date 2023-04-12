@@ -20,11 +20,13 @@ class MOTNDP(gym.Env):
 
         # Observations are dictionaries with the agent's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, self.city.grid_size - 1, shape=(2,), dtype=int),
-            }
-        )
+        # self.observation_space = spaces.Dict(
+        #     {
+        #         "agent": spaces.Box(0, self.city.grid_size - 1, shape=(2,), dtype=int),
+        #     }
+        # )
+        # self.observation_space = spaces.Box(0, self.city.grid_size - 1, shape=(2,), dtype=int)
+        self.observation_space = spaces.Discrete(self.city.grid_size)
 
         # We have 8 actions, corresponding to
         # 0: walk up
@@ -66,7 +68,7 @@ class MOTNDP(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent": self._agent_location}
+        return {'location': self._agent_location}
     
     def _get_info(self):
         return {}
