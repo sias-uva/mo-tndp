@@ -13,6 +13,7 @@ class MOTNDP(gym.Env):
         self.city = city
         self.nr_stations = nr_stations
         self.stations_placed = 0
+        self.covered_segments = []
         # size of the grid
         # self.grid_size = self.city.grid_size
         # self.size = size  # The size of the square grid
@@ -38,6 +39,7 @@ class MOTNDP(gym.Env):
         # 6: walk left
         # 7: walk up-left
         self.action_space = spaces.Discrete(8)
+        self.action_mask = np.ones(self.action_space.n, dtype=np.int8)
 
         """
         The following dictionary maps abstract actions from `self.action_space` to
@@ -71,11 +73,15 @@ class MOTNDP(gym.Env):
         return {'location': self._agent_location}
     
     def _get_info(self):
-        return {}
+        return {'segments': self.covered_segments, 'action_mask': self.action_mask}
     
     def _calculate_reward(self, segment, use_pct=True):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
+        if segment in self.covered_segments:
+            return np.zeros(len(self.city.group_od_mx))
+
+        segment = np.array(segment)
         sat_od_mask = self.city.satisfied_od_mask(segment)
         sat_group_ods = np.zeros(len(self.city.group_od_mx))
         sat_group_ods_pct = np.zeros(len(self.city.group_od_mx))
@@ -90,22 +96,35 @@ class MOTNDP(gym.Env):
         
         return group_rw
     
-    def reset(self, seed=None, options=None):
+    def _update_action_mask(self, action):
+        # TODO This is a hacky way to do this. Should be a better way to do this.
+        if action <= 3:
+            self.action_mask[action + 4] = 0
+        elif action >= 4:
+            self.action_mask[action - 4] = 0
+
+    def reset(self, seed=None, loc=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
+        if loc:
+            if type(loc) == tuple:
+                loc = np.array([loc[0], loc[1]])
+            self._agent_location = loc
         # Choose the agent's location uniformly at random, by sampling its x and y coordinates
-        agent_x = self.np_random.integers(0, self.city.grid_x_size)
-        agent_y = self.np_random.integers(0, self.city.grid_y_size)
-        self._agent_location = np.array([agent_x, agent_y])
+        else:
+            agent_x = self.np_random.integers(0, self.city.grid_x_size)
+            agent_y = self.np_random.integers(0, self.city.grid_y_size)
+            self._agent_location = np.array([agent_x, agent_y])
+            
         self.stations_placed = 0
-
+        self.covered_segments = []
         observation = self._get_obs()
 
         # if self.render_mode == "human":
         #     self._render_frame()
 
-        return observation
+        return observation, self._get_info()
     
     def step(self, action):
         self.stations_placed += 1
@@ -121,10 +140,16 @@ class MOTNDP(gym.Env):
             new_location = self._agent_location
 
         # We add a new dimension to the agent's location to match grid_to_vector's generalization
-        segment = np.array([self.city.grid_to_vector(self._agent_location[None, :]).item(), self.city.grid_to_vector(new_location[None, :]).item()])
-        reward = self._calculate_reward(segment)
+        from_idx = self.city.grid_to_vector(self._agent_location[None, :]).item()
+        to_idx = self.city.grid_to_vector(new_location[None, :]).item()
+        reward = self._calculate_reward([from_idx, to_idx])
+        self.covered_segments.append([from_idx, to_idx])
+        self.covered_segments.append([to_idx, from_idx])
         # An episode is done iff the agent has reached the target
         terminated = self.stations_placed >= self.nr_stations
+
+        # Update the action mask
+        self._update_action_mask(action)
 
         self._agent_location = new_location
         observation = self._get_obs()
