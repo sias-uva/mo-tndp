@@ -17,7 +17,7 @@ gamma = 1
 epsilon = 1
 max_epsilon = 1
 min_epsilon = 0.01
-decay = 0.00005
+decay = 0.0001
 
 train_episodes = 10000
 test_episodes = 1
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     #Visualizing results and total reward over all episodes
     x = range(train_episodes)
     plt.plot(x, rewards, label='rewards')
-    plt.plot(x, epsilons, label='epsilons')
+    plt.plot(x, epsilons, label='epsilon')
     plt.xlabel('Episode')
     plt.ylabel('Training total reward')
     plt.ylim(0, None)
@@ -126,4 +126,3 @@ if __name__ == '__main__':
         total_rewards += episode_reward
 
     print('Line Segments: ', locations)
-

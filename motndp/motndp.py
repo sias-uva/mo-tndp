@@ -13,8 +13,10 @@ class MOTNDP(gym.Env):
         self.city = city
         self.nr_stations = nr_stations
         self.stations_placed = 0
-        # visited cells in the grid
-        self.covered_cells = []
+        # visited cells in the grid (by index)
+        self.covered_cells_vid = []
+        # visited cells in the grid (by coordinate)
+        self.covered_cells_gid = [] 
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
         # size of the grid
@@ -104,16 +106,17 @@ class MOTNDP(gym.Env):
         possible_locations = location + self._action_to_direction 
         self.action_mask = np.all(possible_locations >= 0, axis=1) &  \
                             (possible_locations[:, 0] < self.city.grid_x_size) & \
-                            (possible_locations[:, 1] < self.city.grid_y_size)
+                            (possible_locations[:, 1] < self.city.grid_y_size) & \
+                            (~np.isin(self.city.grid_to_vector(possible_locations), self.covered_cells_vid)) # mask out visited cells
         self.action_mask = self.action_mask.astype(np.int8)
                 
         # Dissallow the agent to go back to the previous cell
         # TODO This is a hacky way to do this. Should be a better way to do this.
-        if prev_action:
-            if prev_action <= 3:
-                self.action_mask[prev_action + 4] = 0
-            elif prev_action >= 4:
-                self.action_mask[prev_action - 4] = 0
+        # if prev_action:
+        #     if prev_action <= 3:
+        #         self.action_mask[prev_action + 4] = 0
+        #     elif prev_action >= 4:
+        #         self.action_mask[prev_action - 4] = 0
 
 
     def reset(self, seed=None, loc=None):
@@ -131,7 +134,8 @@ class MOTNDP(gym.Env):
             self._agent_location = np.array([agent_x, agent_y])
             
         self.stations_placed =  1
-        self.covered_cells = [self.city.grid_to_vector(self._agent_location[None, :]).item()]
+        self.covered_cells_vid = [self.city.grid_to_vector(self._agent_location[None, :]).item()]
+        self.covered_cells_gid = [self._agent_location]
         self.covered_segments = []
 
         self._update_action_mask(self._agent_location)
@@ -159,7 +163,8 @@ class MOTNDP(gym.Env):
 
         self.covered_segments.append([from_idx, to_idx])
         self.covered_segments.append([to_idx, from_idx])
-        self.covered_cells.append(to_idx)
+        self.covered_cells_vid.append(to_idx)
+        self.covered_cells_gid.append(new_location)
         # An episode is done iff the agent has reached the target
         terminated = self.stations_placed >= self.nr_stations
 
