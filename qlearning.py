@@ -17,11 +17,11 @@ gamma = 1
 epsilon = 1
 max_epsilon = 1
 min_epsilon = 0.01
-decay = 0.0001
+decay = 0.00005
 
 train_episodes = 10000
 test_episodes = 1
-nr_stations = 8
+nr_stations = 9
 seed = 42
 
 # follow pre-determined policy
@@ -75,12 +75,12 @@ if __name__ == '__main__':
             # Update Q-Table
             new_state_gid = city.grid_to_vector(new_state['location'][None, :]).item()
             Q[state_index, action] = Q[state_index, action] + alpha * (reward + gamma * np.max(Q[new_state_gid, :]) - Q[state_index, action])
-            episode_reward += reward      
-            state = new_state    
+            episode_reward += reward
+            state = new_state
 
             training_step += 1
             episode_step += 1
-            print(f'step {training_step}, episode_step: {episode_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
+            print(f'step {training_step}, episode: {episode}, episode_step: {episode_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
 
             if done:
                 break
