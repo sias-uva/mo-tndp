@@ -12,22 +12,20 @@ register(
     entry_point="motndp.motndp:MOTNDP"
 )
 
-alpha = 0.7 # learning rate
-gamma = 1
+alpha = 0.8 # learning rate
+gamma = 0.95
 epsilon = 1
 max_epsilon = 1
-min_epsilon = 0.01
+min_epsilon = 0.001
 decay = 0.0001
 
-train_episodes = 10000
+train_episodes = 30000
 test_episodes = 1
 nr_stations = 9
 seed = 42
 
 # follow pre-determined policy
 policy = None
-# whether to mask out actions that lead to cells that are already selected
-mask_selected_cells = False
 # Best policy
 # policy = [0, 0, 0, 0, 2, 2, 2, 2]
 
@@ -62,7 +60,7 @@ if __name__ == '__main__':
                 action = policy[episode_step]
             # exploit
             elif exp_exp_tradeoff > epsilon:
-                action = np.argmax(Q[state_index, :])
+                action = np.argmax(Q[state_index, :] * info['action_mask'])
             # explore
             else:
                 action = env.action_space.sample(mask=info['action_mask'])
@@ -76,11 +74,12 @@ if __name__ == '__main__':
             new_state_gid = city.grid_to_vector(new_state['location'][None, :]).item()
             Q[state_index, action] = Q[state_index, action] + alpha * (reward + gamma * np.max(Q[new_state_gid, :]) - Q[state_index, action])
             episode_reward += reward
-            state = new_state
 
             training_step += 1
             episode_step += 1
             print(f'step {training_step}, episode: {episode}, episode_step: {episode_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
+
+            state = new_state
 
             if done:
                 break
@@ -116,7 +115,7 @@ if __name__ == '__main__':
         while True:
             state_index = city.grid_to_vector(state['location'][None, :]).item()
             locations.append(state['location'])
-            action = np.argmax(Q[state_index,:])      
+            action = np.argmax(Q[state_index,:] * info['action_mask'])
             new_state, reward, done, _, _ = env.step(action)
             reward = reward.sum()
             episode_reward += reward      

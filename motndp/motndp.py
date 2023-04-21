@@ -102,7 +102,7 @@ class MOTNDP(gym.Env):
         return group_rw
     
     def _update_action_mask(self, location, prev_action=None):
-        # Apply action mask based on the location of the agent (it should stay inside the grid)
+        # Apply action mask based on the location of the agent (it should stay inside the grid) & previously visited cells (it should not visit the same cell twice)
         possible_locations = location + self._action_to_direction 
         self.action_mask = np.all(possible_locations >= 0, axis=1) &  \
                             (possible_locations[:, 0] < self.city.grid_x_size) & \
