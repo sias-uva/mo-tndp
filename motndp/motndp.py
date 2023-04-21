@@ -149,7 +149,6 @@ class MOTNDP(gym.Env):
     def step(self, action):
         # Map the action to the direction we walk in
         direction = self._action_to_direction[action]
-        # We use `np.clip` to make sure we don't leave the grid
         new_location = np.array([
             self._agent_location[0] + direction[0],
             self._agent_location[1] + direction[1]

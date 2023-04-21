@@ -12,14 +12,14 @@ register(
     entry_point="motndp.motndp:MOTNDP"
 )
 
-alpha = 0.8 # learning rate
-gamma = 0.95
+alpha = 0.1 # learning rate
+gamma = 0.9
 epsilon = 1
 max_epsilon = 1
-min_epsilon = 0.001
-decay = 0.0001
+min_epsilon = 0.00
+decay = 0.00005
 
-train_episodes = 30000
+train_episodes = 120000
 test_episodes = 1
 nr_stations = 9
 seed = 42
@@ -28,6 +28,7 @@ seed = 42
 policy = None
 # Best policy
 # policy = [0, 0, 0, 0, 2, 2, 2, 2]
+# policy = [0, 1, 1, 0, 2, 2, 4, 6]
 
 if __name__ == '__main__':
     dilemma_dir = Path(f"./cities/dilemma_5x5")
@@ -50,12 +51,13 @@ if __name__ == '__main__':
         state, info = env.reset(seed=seed, loc=(4, 0))
         episode_reward = 0
         episode_step = 0
-        while True:
-            #Choosing an action given the states based on a random number
-            exp_exp_tradeoff = random.uniform(0, 1) 
-            
+        while True:            
             state_index = city.grid_to_vector(state['location'][None, :]).item()
 
+            # Exploration-exploitation trade-off 
+            exp_exp_tradeoff = random.uniform(0, 1)
+
+            # follow predetermined policy (set above)
             if policy:
                 action = policy[episode_step]
             # exploit
@@ -116,7 +118,7 @@ if __name__ == '__main__':
             state_index = city.grid_to_vector(state['location'][None, :]).item()
             locations.append(state['location'])
             action = np.argmax(Q[state_index,:] * info['action_mask'])
-            new_state, reward, done, _, _ = env.step(action)
+            new_state, reward, done, _, info = env.step(action)
             reward = reward.sum()
             episode_reward += reward      
             state = new_state    
