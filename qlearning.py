@@ -1,6 +1,8 @@
+# This is a simple demo of how to use Q-learning to solve the TNDP, using the gymnasium framework.
+# Here we assume a single reward function, which is the sum of the rewards of all groups.
+# Thus, one can say the utility function is the (equal weighted) sum of the utilities of all groups.
 from pathlib import Path
 import random
-
 import numpy as np
 from motndp.city import City
 import gymnasium
