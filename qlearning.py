@@ -13,13 +13,13 @@ register(
 )
 
 alpha = 0.1 # learning rate
-gamma = 0.9
+gamma = 0.2
 epsilon = 1
 max_epsilon = 1
 min_epsilon = 0.00
-decay = 0.00005
+decay = 0.02
 
-train_episodes = 120000
+train_episodes = 400
 test_episodes = 1
 nr_stations = 9
 seed = 42
@@ -42,9 +42,9 @@ if __name__ == '__main__':
 
     Q = np.zeros((env.observation_space.n, env.action_space.n))
     rewards = []
+    avg_rewards = []
     epsilons = []
     training_step = 0
-
     best_episode_reward = 0
     best_episode_segment = []
     for episode in range(train_episodes):
@@ -94,19 +94,22 @@ if __name__ == '__main__':
         
         # Adding the total reward and reduced epsilon values
         rewards.append(episode_reward)
+        # Save the average reward over the last 10 episodes
+        avg_rewards.append(np.average(rewards[-10:]))
         epsilons.append(epsilon)
 
-    print('all good')
     #Visualizing results and total reward over all episodes
     x = range(train_episodes)
-    plt.plot(x, rewards, label='rewards')
-    plt.plot(x, epsilons, label='epsilon')
-    plt.xlabel('Episode')
-    plt.ylabel('Training total reward')
-    plt.ylim(0, None)
-    plt.title('Total rewards over all episodes in training') 
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(x, rewards, label='rewards', color='lightgray')
+    ax.plot(x, epsilons, label='epsilon', color='orange')
+    ax.plot(x, avg_rewards, label='average reward', color='blue')
+    ax.set_xlabel('Episode')
+    ax.set_ylabel('Training total reward')
+    ax.set_ylim(0, None)
+    ax.set_title('Total rewards over all episodes in training') 
+    fig.legend()
+    fig.savefig(f'{Path("./qlearning_results.png")}')
 
     # Testing the agent
     total_rewards = 0
