@@ -45,6 +45,9 @@ class MOTNDP(gym.Env):
         # 7: walk up-left
         self.action_space = spaces.Discrete(8)
         self.action_mask = np.ones(self.action_space.n, dtype=np.int8)
+        
+        self.nr_groups = self.city.groups.shape[0]
+        self.reward_space = spaces.Box(low=np.array([0] * self.nr_groups), high=np.array([1] * self.nr_groups), dtype=np.float32)
 
         """
         The following array maps abstract actions from `self.action_space` to
@@ -81,6 +84,7 @@ class MOTNDP(gym.Env):
         return {'segments': self.covered_segments, 'action_mask': self.action_mask}
     
     def _calculate_reward(self, segment, use_pct=True):
+        # DO NOT SET use_pct to false, because it will render the reward_space useless
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
         if segment in self.covered_segments:
