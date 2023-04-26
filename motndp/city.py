@@ -155,7 +155,7 @@ class City(object):
         # read configuration file that contains basic parameters for the City.
         config = configparser.ConfigParser()
         config.read(env_path / 'config.txt')
-        assert 'config' in config
+        assert 'config' in config, "Config file not found or not in the correct format."
 
         # size of the grid
         self.grid_x_size = config.getint('config', 'grid_x_size')
