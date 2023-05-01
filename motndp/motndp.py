@@ -155,14 +155,14 @@ class MOTNDP(gym.Env):
         self.covered_segments.append([to_idx, from_idx])
         self.covered_cells_vid.append(to_idx)
         self.covered_cells_gid.append(new_location)
-        # An episode is done iff the agent has placed all stations under the budget.
-        terminated = self.stations_placed >= self.nr_stations
 
         # Update the agent's location
         self._update_agent_location(new_location)
-        
         # Update the action mask
         self._update_action_mask(self._agent_location, action)
+
+        # An episode is done if the agent has placed all stations under the budget or if there's no more actions to take
+        terminated = self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0
 
         observation = self._get_obs()
         info  = self._get_info()
