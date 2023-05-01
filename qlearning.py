@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
             training_step += 1
             episode_step += 1
-            print(f'step {training_step}, episode: {episode}, episode_step: {episode_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
+            print(f'step {training_step}, episode: {episode}, episode_step: {episode_step}, state: {state["location"]}, action: {action}, reward: {reward} new_state: {new_state["location"]}')
 
             state = new_state
 

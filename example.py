@@ -24,14 +24,14 @@ if __name__ == '__main__':
     env = gymnasium.make('motndp_dilemma-v0', city=city, nr_stations=nr_stations)
     training_step = 0
     for _ in range(nr_episodes):
-        state = env.reset(seed=seed)
+        state, info = env.reset(seed=seed)
         while True:
             # Implement the agent policy here
-            action = env.action_space.sample()
-            new_state, reward, done, _, _ = env.step(action)
+            action = env.action_space.sample(mask=info['action_mask'])
+            new_state, reward, done, _, info = env.step(action)
 
             training_step += 1
-            print(f'step {training_step}, state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
+            print(f'step {training_step}, state: {state["location"]}, action: {action}, reward: {reward} new_state: {new_state["location"]}')
 
             if done:
                 break
