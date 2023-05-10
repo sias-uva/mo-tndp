@@ -3,15 +3,18 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 from motndp.city import City
+from motndp.constraints import Constraints
 
 
 class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {}
 
-    def __init__(self, city: City, nr_stations: int, render_mode=None):
+    def __init__(self, city: City, constraints: Constraints, nr_stations: int, render_mode=None):
         # city environment
         self.city = city
+        # action-masking constraints
+        self.mask_actions = constraints.mask_actions
         # total number of stations (steps) to place
         self.nr_stations = nr_stations
         self.stations_placed = 0
@@ -104,11 +107,7 @@ class MOTNDP(gym.Env):
     def _update_action_mask(self, location, prev_action=None):
         # Apply action mask based on the location of the agent (it should stay inside the grid) & previously visited cells (it should not visit the same cell twice)
         possible_locations = location + self._action_to_direction 
-        self.action_mask = np.all(possible_locations >= 0, axis=1) &  \
-                            (possible_locations[:, 0] < self.city.grid_x_size) & \
-                            (possible_locations[:, 1] < self.city.grid_y_size) & \
-                            (~np.isin(self.city.grid_to_vector(possible_locations), self.covered_cells_vid)) # mask out visited cells
-        self.action_mask = self.action_mask.astype(np.int8)
+        self.action_mask = self.mask_actions(location, possible_locations, self.covered_cells_gid)
 
     def reset(self, seed=None, loc=None):
         # We need the following line to seed self.np_random

@@ -3,6 +3,8 @@ from motndp.city import City
 import gymnasium
 from gymnasium.envs.registration import register
 
+from motndp.constraints import BasicConstraints
+
 register(
     id="motndp_dilemma-v0",
     entry_point="motndp.motndp:MOTNDP"
@@ -21,7 +23,7 @@ if __name__ == '__main__':
     nr_stations = 9 # essentially steps in the episode
     seed = 42
     
-    env = gymnasium.make('motndp_dilemma-v0', city=city, nr_stations=nr_stations)
+    env = gymnasium.make('motndp_dilemma-v0', city=city, constraints=BasicConstraints(city), nr_stations=nr_stations)
     training_step = 0
     for _ in range(nr_episodes):
         state, info = env.reset(seed=seed)
