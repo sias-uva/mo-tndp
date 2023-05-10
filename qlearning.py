@@ -9,7 +9,7 @@ import gymnasium
 from gymnasium.envs.registration import register
 import matplotlib.pyplot as plt
 
-from motndp.constraints import BasicConstraints
+from motndp.constraints import BasicConstraints, MetroConstraints
 
 register(
     id="motndp_dilemma-v0",
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     )
     
     # TODO rethink: I do not like that constraints take the city as an argument, but it is what it is for now
-    env = gymnasium.make('motndp_dilemma-v0', city=city, constraints=BasicConstraints(city), nr_stations=nr_stations)
+    env = gymnasium.make('motndp_dilemma-v0', city=city, constraints=MetroConstraints(city), nr_stations=nr_stations)
 
     Q = np.zeros((env.observation_space.n, env.action_space.n))
     rewards = []
