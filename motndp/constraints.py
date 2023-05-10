@@ -84,19 +84,19 @@ class MetroConstraints(Constraints):
         elif np.array_equal(direction, (0, -1)):
             action_mask[[1, 2, 3]] = 0
         # right movement
-        elif np.array_equal(direction, direction == (0, 1)):
+        elif np.array_equal(direction, (0, 1)):
             action_mask[[5, 6, 7]] = 0
         # up-left movement
-        elif np.array_equal(direction, direction == (-1, -1)):
+        elif np.array_equal(direction, (-1, -1)):
             action_mask[[1, 2, 3, 4, 5]] = 0
         # up-right movement
-        elif np.array_equal(direction, direction == (-1, 1)):
+        elif np.array_equal(direction, (-1, 1)):
             action_mask[[3, 4, 5, 6, 7]] = 0
         # down-left movement
-        elif np.array_equal(direction, direction == (1, -1)):
+        elif np.array_equal(direction, (1, -1)):
             action_mask[[0, 1, 2, 3, 7]] = 0
         # down-right movement
-        elif np.array_equal(direction, direction == (1, 1)):
+        elif np.array_equal(direction, (1, 1)):
             action_mask[[0, 1, 5, 6, 7]] = 0
 
         return action_mask
