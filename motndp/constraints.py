@@ -83,6 +83,8 @@ class MetroConstraints(Constraints):
         direction[direction < 0] = -1
 
         if len(visited_locations) > 2:
+            # We want to detect indirect diagonal movement, e.g. up then left, or left then up and so on.
+            # To do this, we check the direction of the last two steps.
             two_step_dir = current_location - visited_locations[-3]
             two_step_dir[two_step_dir > 0] = 1
             two_step_dir[two_step_dir < 0] = -1
