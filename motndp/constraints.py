@@ -50,6 +50,15 @@ class MetroConstraints(Constraints):
     More information on these constraints on Wei et al. 2020 paper: City Metro Network Expansion with Reinforcement Learning: https://www.kdd.org/kdd2020/accepted-papers/view/city-metro-network-expansion-with-reinforcement-learning
     """
 
+    dir_up = (-1, 0)
+    dir_down = (1, 0)
+    dir_left = (0, -1)
+    dir_right = (0, 1)
+    dir_upleft = (-1, -1)
+    dir_upright = (-1, 1)
+    dir_downleft = (1, -1)
+    dir_downright = (1, 1)
+
     def __init__(self, city: City):
         super(MetroConstraints, self).__init__()
 
@@ -73,30 +82,35 @@ class MetroConstraints(Constraints):
         direction[direction > 0] = 1
         direction[direction < 0] = -1
 
+        if len(visited_locations) > 2:
+            prev_direction = visited_locations[-2] - visited_locations[-3]
+        else:
+            prev_direction = None
+
         # mask out actions that are not in the direction of the agent, to prevent meandering and circular routes
         # upwards movement
-        if np.array_equal(direction, (-1, 0)):
+        if np.array_equal(direction, self.dir_up):
             action_mask[[3, 4, 5]] = 0
         # downwards movement
-        elif np.array_equal(direction, (1, 0)):
+        elif np.array_equal(direction, self.dir_down):
             action_mask[[0, 1, 7]] = 0
         # left movement
-        elif np.array_equal(direction, (0, -1)):
+        elif np.array_equal(direction, self.dir_left):
             action_mask[[1, 2, 3]] = 0
         # right movement
-        elif np.array_equal(direction, (0, 1)):
+        elif np.array_equal(direction, self.dir_right):
             action_mask[[5, 6, 7]] = 0
         # up-left movement
-        elif np.array_equal(direction, (-1, -1)):
+        elif (np.array_equal(direction, self.dir_upleft)) or (np.array_equal(prev_direction, self.dir_up) and np.array_equal(direction, self.dir_left)):
             action_mask[[1, 2, 3, 4, 5]] = 0
         # up-right movement
-        elif np.array_equal(direction, (-1, 1)):
+        elif (np.array_equal(direction, self.dir_upright)) or (np.array_equal(prev_direction, self.dir_up) and np.array_equal(direction, self.dir_right)):
             action_mask[[3, 4, 5, 6, 7]] = 0
         # down-left movement
-        elif np.array_equal(direction, (1, -1)):
+        elif (np.array_equal(direction, self.dir_downleft)) or (np.array_equal(prev_direction, self.dir_down) and np.array_equal(direction, self.dir_left)):
             action_mask[[0, 1, 2, 3, 7]] = 0
         # down-right movement
-        elif np.array_equal(direction, (1, 1)):
+        elif (np.array_equal(direction, self.dir_downright)) or (np.array_equal(prev_direction, self.dir_down) and np.array_equal(direction, self.dir_right)):
             action_mask[[0, 1, 5, 6, 7]] = 0
 
         return action_mask
