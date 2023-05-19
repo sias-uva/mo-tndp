@@ -55,6 +55,9 @@ class City(object):
         grid_x = (vector_idx // self.grid_y_size)
         grid_y = (vector_idx % self.grid_y_size)
 
+        if isinstance(vector_idx, np.int64):
+            return np.array([grid_x, grid_y])
+
         # Control for when vector_idx is just a tensor of 1 idx vs when it is a tensor of multiple idxs.
         # TODO: maybe there is a way to do that universally without if
         if vector_idx.dim() == 0:
