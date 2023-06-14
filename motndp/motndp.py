@@ -42,7 +42,7 @@ class MOTNDP(gym.Env):
         # Nr of groups in the city (used for multi-objective reward)
         self.nr_groups = self.city.groups.shape[0]
         # Reward space is a vector of length `self.nr_groups` with values between 0 and 1 -- used in morl-baselines
-        self.reward_space = spaces.Box(low=np.array([0] * self.nr_groups), high=np.array([1] * self.nr_groups), dtype=np.float32)
+        self.reward_space = spaces.Box(low=np.float32([0] * self.nr_groups), high=np.float32([1] * self.nr_groups), dtype=np.float32)
 
         """
         The following array maps abstract actions from `self.action_space` to
