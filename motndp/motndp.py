@@ -8,7 +8,7 @@ from motndp.constraints import Constraints
 
 class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
-    metadata = {}
+    metadata = {"render_modes": ["rgb_array"]}
 
     def __init__(self, city: City, constraints: Constraints, nr_stations: int, render_mode=None):
         # city environment
