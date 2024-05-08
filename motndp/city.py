@@ -57,16 +57,18 @@ class City(object):
 
         if isinstance(vector_idx, np.int64):
             return np.array([grid_x, grid_y])
+        
+        return np.column_stack((grid_x, grid_y))
 
         # Control for when vector_idx is just a tensor of 1 idx vs when it is a tensor of multiple idxs.
         # TODO: maybe there is a way to do that universally without if
-        if vector_idx.dim() == 0:
-            grid_x = grid_x.view(1)
-            grid_y = grid_y.view(1)
+        # if vector_idx.dim() == 0:
+        #     grid_x = grid_x.view(1)
+        #     grid_y = grid_y.view(1)
 
-            return np.cat((grid_x, grid_y), dim=0).view(1, 2)
+        #     return np.cat((grid_x, grid_y), dim=0).view(1, 2)
 
-        return np.cat((grid_x, grid_y), dim=0)
+        # return np.cat((grid_x, grid_y), dim=0)
         
     def process_lines(self, lines):
         """Creates a list of tensors for each line, from given grid indices. Used to create line/segment representations of metro lines.

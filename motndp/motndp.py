@@ -10,13 +10,26 @@ class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {"render_modes": ["rgb_array"]}
 
-    def __init__(self, city: City, constraints: Constraints, nr_stations: int, render_mode=None):
+    def __init__(self, city: City, constraints: Constraints, nr_stations: int, starting_loc=None, obs_type='full_dict', render_mode=None):
+        """
+        Args:
+            city (City): City object that contains the grid and the groups.
+            constraints (Constraints): Transport constraints object with the constraints on movement in the grid.
+            nr_stations (int): Episode length. Total number of stations to place (each station is an episode step).
+            starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
+            obs_type (str): Type of observation to return. Can be 'full_dict' (returns a dictionary with all information) or 'location_vector' (returns a one-hot vector of the agent's location in the grid), 'location' (returns the agent's location in grid coordinates), 'location_vid' (returns the agent's location as a discrete index).
+            render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
+        """
         # city environment
         self.city = city
         # action-masking constraints
         self.mask_actions = constraints.mask_actions
         # total number of stations (steps) to place
         self.nr_stations = nr_stations
+        # default starting location of the agent
+        self.starting_loc = starting_loc
+        # observation type
+        self.observation_type = obs_type
         self.stations_placed = 0
         # visited cells in the grid (by index)
         self.covered_cells_vid = []
@@ -61,9 +74,17 @@ class MOTNDP(gym.Env):
 
 
     def _get_obs(self):
-        return {'location': self._agent_location, 
-                'location_vid': self._agent_location_vid, 
-                'location_vector': self._agent_location_vector}
+        ## TODO: fix this mess
+        if self.observation_type == 'full_dict':
+            return {'location': self._agent_location, 
+                    'location_vid': self._agent_location_vid, 
+                    'location_vector': self._agent_location_vector}
+        elif self.observation_type == 'location_vector':
+            return self._agent_location_vector
+        elif self.observation_type == 'location':
+            return self._agent_location
+        elif self.observation_type == 'location_vid':
+            return [self._agent_location_vid]
     
     def _get_info(self):
         return {'segments': self.covered_segments, 'action_mask': self.action_mask}
@@ -106,17 +127,25 @@ class MOTNDP(gym.Env):
     
     def _update_action_mask(self, location, prev_action=None):
         # Apply action mask based on the location of the agent (it should stay inside the grid) & previously visited cells (it should not visit the same cell twice)
-        possible_locations = location + self._action_to_direction 
+        possible_locations = location + self._action_to_direction
         self.action_mask = self.mask_actions(location, possible_locations, self.covered_cells_gid)
+
+    def is_action_allowed(self, location, action):
+        possible_locations = location + self._action_to_direction
+        action_mask = self.mask_actions(location, possible_locations, self.covered_cells_gid)
+        return action_mask[action] == 1
 
     def reset(self, seed=None, loc=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        if loc:
-            if type(loc) == tuple:
-                loc = np.array([loc[0], loc[1]])
-            self._update_agent_location(loc)
+        # loc argument supersedes self.starting_loc
+        starting_loc = loc if loc else self.starting_loc
+        if starting_loc:
+            if type(starting_loc) == tuple:
+                starting_loc = np.array([starting_loc[0], starting_loc[1]])
+            self._update_agent_location(starting_loc)
+            
         # Choose the agent's location uniformly at random, by sampling its x and y coordinates
         else:
             agent_x = self.np_random.integers(0, self.city.grid_x_size)
@@ -139,26 +168,33 @@ class MOTNDP(gym.Env):
     def step(self, action):
         # Map the action to the direction we walk in
         direction = self._action_to_direction[action]
-        new_location = np.array([
-            self._agent_location[0] + direction[0],
-            self._agent_location[1] + direction[1]
-        ])
-        self.stations_placed += 1
+        
+        if self.is_action_allowed(self._agent_location, action):
+            self.stations_placed += 1
+            new_location = np.array([
+                self._agent_location[0] + direction[0],
+                self._agent_location[1] + direction[1]
+            ])
 
-        # We add a new dimension to the agent's location to match grid_to_vector's generalization
-        from_idx = self.city.grid_to_vector(self._agent_location[None, :]).item()
-        to_idx = self.city.grid_to_vector(new_location[None, :]).item()
-        reward = self._calculate_reward([from_idx, to_idx])
+            # We add a new dimension to the agent's location to match grid_to_vector's generalization
+            from_idx = self.city.grid_to_vector(self._agent_location[None, :]).item()
+            to_idx = self.city.grid_to_vector(new_location[None, :]).item()
+            reward = self._calculate_reward([from_idx, to_idx])
 
-        self.covered_segments.append([from_idx, to_idx])
-        self.covered_segments.append([to_idx, from_idx])
-        self.covered_cells_vid.append(to_idx)
-        self.covered_cells_gid.append(new_location)
+            self.covered_segments.append([from_idx, to_idx])
+            self.covered_segments.append([to_idx, from_idx])
+            self.covered_cells_vid.append(to_idx)
+            self.covered_cells_gid.append(new_location)
 
-        # Update the agent's location
-        self._update_agent_location(new_location)
-        # Update the action mask
-        self._update_action_mask(self._agent_location, action)
+            # Update the agent's location
+            self._update_agent_location(new_location)
+            # Update the action mask
+            self._update_action_mask(self._agent_location, action)
+        else:
+            reward = np.zeros(self.nr_groups)
+            # TODO reconsider if this counter should be here (because the agent is not moving, thus there is no station placed). 
+            # if I remove it I need to consider that the episode needs to terminate somehow.
+            self.stations_placed += 1
 
         # An episode is done if the agent has placed all stations under the budget or if there's no more actions to take
         terminated = self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0
