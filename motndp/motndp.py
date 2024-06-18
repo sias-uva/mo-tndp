@@ -191,10 +191,11 @@ class MOTNDP(gym.Env):
             # Update the action mask
             self._update_action_mask(self._agent_location, action)
         else:
-            reward = np.zeros(self.nr_groups)
+            raise Exception("Not allowed action was taken. Make sure you apply the constraints to the action selection.")
+            # reward = np.zeros(self.nr_groups)
             # TODO reconsider if this counter should be here (because the agent is not moving, thus there is no station placed). 
             # if I remove it I need to consider that the episode needs to terminate somehow.
-            self.stations_placed += 1
+            # self.stations_placed += 1
 
         # An episode is done if the agent has placed all stations under the budget or if there's no more actions to take
         terminated = self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0
