@@ -14,7 +14,7 @@ def matrix_from_file(path, size_x, size_y):
         size_y (int): nr of columns in the matrix.
 
     Returns:
-        torch.Tensor: the matrix representation of the file.
+        np.array: the matrix representation of the file.
     """
     mx = np.zeros((size_x, size_y))
     with open(path, 'r') as f:
@@ -34,10 +34,10 @@ class City(object):
         """Converts grid indices(x, y) to a vector index (x^).
 
         Args:
-            grid_idx (torch.Tensor): the grid indices to be converted to vector indices: [[x1, y1], [x2, y2], ...]
+            grid_idx (np.array): the grid indices to be converted to vector indices: [[x1, y1], [x2, y2], ...]
 
         Returns:
-            torch.Tensor: Converted vector.
+            np.array: Converted vector.
         """
         v_idx = grid_idx[:, 0] * self.grid_y_size + grid_idx[:, 1]
         return v_idx
@@ -46,10 +46,10 @@ class City(object):
         """Converts vector index (x^2) to grid indices (x, y)
 
         Args:
-            vector_idx (torch.Tensor): the vector index to be converted to grid indices: x
+            vector_idx (np.array): the vector index to be converted to grid indices: x
 
         Returns:
-            torch.Tensor: covnerted grid index.
+            np.array: covnerted grid index.
         """
 
         grid_x = (vector_idx // self.grid_y_size)
@@ -92,38 +92,43 @@ class City(object):
         This prevents re-selecting locations.
 
         Args:
-            vector_index_allow (torch.Tensor): Allowed locations(indices) to be selected.
+            vector_index_allow (np.array): Allowed locations(indices) to be selected.
 
         Returns:
-            torch.Tensor: the updated mask of allowed next locations.
+            np.array: the updated mask of allowed next locations.
         """
         mask_initial = np.zeros(1, self.grid_size).long() # 1 : bacth_size
         mask = mask_initial.index_fill_(1, vector_index_allow, 1).float()  # the first 1: dim , the second 1: value
 
         return mask
     
-    # TODO: consider changing this to only calculate the mask based on stationed grids, not every grid covered by old lines.
-    def satisfied_od_mask(self, tour_idx):
-        """Computes a boolean mask of the satisfied OD flows of a given line (tour).
+    def satisfied_od_mask(self, segment, cells_to_chain=None):
+        """Computes a boolean mask of the satisfied OD flows of a given segment.
 
         Args:
-            tour_idx (torch.Tensor): vector indices resembling a line.
+            segment (np.array): vector indices resembling a segment.
+            cells_to_chain (np.array): vector indices of cells that are connected to the segment. If not None, the ODs of these cells and the new added cell will be summed to the reward.
 
         Returns:
-            torch.Tensor: mask of self.grid_size * self.grid_size of satisfied OD flows.
+            np.array: mask of self.grid_size * self.grid_size of satisfied OD flows.
         """
-        # Satisfied OD pairs from the new line, only considering the new line od demand.
-        # sat_od_pairs = np.combinations(tour_idx.flatten(), 2)
-        sat_od_pairs = np.array(list(itertools.combinations(tour_idx.flatten(), 2)))
+        # Satisfied OD pairs from the new segment, only considering the new segment od demand.
+        sat_od_pairs = np.array(list(itertools.combinations(segment.flatten(), 2)))
 
-        # Satisfied OD pairs from the new line, by considering connections to existing lines.
-        # For each line, we look for intersections to the existing lines (full, not only grids with stations).
+        # If there are previous cells to chain, add the OD pairs of the new segment to these cells.
+        if cells_to_chain is not None:
+            # Only chain to cells that are not in the segment, but previously placed stations
+            cells_to_chain = cells_to_chain[cells_to_chain != segment[0]]
+            sat_od_pairs = np.concatenate((sat_od_pairs, np.column_stack((cells_to_chain, np.full(len(cells_to_chain), segment[1])))))
+                
+        # Satisfied OD pairs from the new segment, by considering connections to existing lines.
+        # For each segment, we look for intersections to the existing lines (full, not only grids with stations).
         # If intersection is found, we add the extra satisfied ODs
         for i, line_full in enumerate(self.existing_lines_full):
             line = self.existing_lines[i]
-            intersection_full_line = np.transpose(((tour_idx - line_full) == 0).nonzero())
+            intersection_full_line = np.transpose(((segment - line_full) == 0).nonzero())
             if intersection_full_line.shape[0] != 0:
-                intersection_station_line = np.transpose(((tour_idx - line) == 0).nonzero())
+                intersection_station_line = np.transpose(((segment - line) == 0).nonzero())
 
                 # We filter the line grids based on the intersection between the new line and the sations of old lines.
                 line_mask = np.ones(line.size, dtype=bool)
@@ -133,14 +138,14 @@ class City(object):
                 # We filter the tour grids based on the intersection between the new line and the full old lines.
                 # Note: here we use the full line filter, because we want to leave out the connection of the intersection
                 # between the new line and existing line stations, as we assume this is already covered by the existing lines.
-                tour_mask = np.ones(tour_idx.size, dtype=bool)
-                tour_mask[intersection_full_line[:, 1]] = False
-                # Note this won't work with multi-dimensional tour_idx
-                tour_connections = tour_idx[tour_mask]
+                segment_mask = np.ones(segment.size, dtype=bool)
+                segment_mask[intersection_full_line[:, 1]] = False
+                # Note this won't work with multi-dimensional segment
+                segment_connections = segment[segment_mask]
 
                 # Create the Cartesian product using np.meshgrid
-                tour_connections, line_connections = np.meshgrid(tour_connections, line_connections.flatten(), indexing='ij')
-                conn_sat_od_pairs = np.vstack([tour_connections.ravel(), line_connections.ravel()]).T
+                segment_connections, line_connections = np.meshgrid(segment_connections, line_connections.flatten(), indexing='ij')
+                conn_sat_od_pairs = np.vstack([segment_connections.ravel(), line_connections.ravel()]).T
                 
                 sat_od_pairs = np.concatenate((sat_od_pairs, conn_sat_od_pairs))
         

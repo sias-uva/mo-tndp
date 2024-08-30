@@ -10,7 +10,7 @@ class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {"render_modes": ["rgb_array"]}
 
-    def __init__(self, city: City, constraints: Constraints, nr_stations: int, starting_loc=None, obs_type='full_dict', od_type='pct',render_mode=None):
+    def __init__(self, city: City, constraints: Constraints, nr_stations: int, starting_loc=None, obs_type='full_dict', od_type='pct', chained_reward=False, render_mode=None):
         """
         Args:
             city (City): City object that contains the grid and the groups.
@@ -19,6 +19,7 @@ class MOTNDP(gym.Env):
             starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
             obs_type (str): Type of observation to return. Can be 'full_dict' (returns a dictionary with all information) or 'location_vector' (returns a one-hot vector of the agent's location in the grid), 'location' (returns the agent's location in grid coordinates), 'location_vid' (returns the agent's location as a discrete index).
             od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
+            chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
             render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
         """
         
@@ -37,6 +38,11 @@ class MOTNDP(gym.Env):
         self.observation_type = obs_type
         # origin-destination calculation type
         self.od_type = od_type
+        # chained reward
+        # An example of the chained reward: Episode with two actions leads to transport line 1 -> 2 -> 3. 
+        # If chained_reward is false, the reward received after the second action will be the OD between 2-3.
+        # If chained_reward is true, the reward received after the second action will be the OD between 2-3 AND 1-3, because station 1 and 3 are now connected (and therefore their demand is deemed satisfied).
+        self.chained_reward = chained_reward
         self.stations_placed = 0
         # visited cells in the grid (by index)
         self.covered_cells_vid = []
@@ -101,9 +107,13 @@ class MOTNDP(gym.Env):
 
         if segment in self.covered_segments:
             return np.zeros(len(self.city.group_od_mx))
-
+        
         segment = np.array(segment)
-        sat_od_mask = self.city.satisfied_od_mask(segment)
+        if self.chained_reward:
+            sat_od_mask = self.city.satisfied_od_mask(segment, np.array(self.covered_cells_vid))
+        else:
+            sat_od_mask = self.city.satisfied_od_mask(segment)
+            
         sat_group_ods = np.zeros(len(self.city.group_od_mx))
         sat_group_ods_pct = np.zeros(len(self.city.group_od_mx))
         for i, g_od in enumerate(self.city.group_od_mx):
@@ -176,11 +186,11 @@ class MOTNDP(gym.Env):
         direction = self._action_to_direction[action]
         
         if self.is_action_allowed(self._agent_location, action):
-            self.stations_placed += 1
             new_location = np.array([
                 self._agent_location[0] + direction[0],
                 self._agent_location[1] + direction[1]
             ])
+            self.stations_placed += 1
 
             # We add a new dimension to the agent's location to match grid_to_vector's generalization
             from_idx = self.city.grid_to_vector(self._agent_location[None, :]).item()
