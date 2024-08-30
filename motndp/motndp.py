@@ -10,7 +10,7 @@ class MOTNDP(gym.Env):
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {"render_modes": ["rgb_array"]}
 
-    def __init__(self, city: City, constraints: Constraints, nr_stations: int, starting_loc=None, obs_type='full_dict', render_mode=None):
+    def __init__(self, city: City, constraints: Constraints, nr_stations: int, starting_loc=None, obs_type='full_dict', od_type='pct',render_mode=None):
         """
         Args:
             city (City): City object that contains the grid and the groups.
@@ -18,8 +18,13 @@ class MOTNDP(gym.Env):
             nr_stations (int): Episode length. Total number of stations to place (each station is an episode step).
             starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
             obs_type (str): Type of observation to return. Can be 'full_dict' (returns a dictionary with all information) or 'location_vector' (returns a one-hot vector of the agent's location in the grid), 'location' (returns the agent's location in grid coordinates), 'location_vid' (returns the agent's location as a discrete index).
+            od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
             render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
         """
+        
+        assert obs_type in ['full_dict', 'location_vector', 'location', 'location_vid'], 'Invalid observation type. Choose one of: full_dict, location_vector, location, location_vid'
+        assert od_type in ['pct', 'abs'], 'Invalid Origin-Destination Type. Choose one of: pct, abs'
+        
         # city environment
         self.city = city
         # action-masking constraints
@@ -30,6 +35,8 @@ class MOTNDP(gym.Env):
         self.starting_loc = starting_loc
         # observation type
         self.observation_type = obs_type
+        # origin-destination calculation type
+        self.od_type = od_type
         self.stations_placed = 0
         # visited cells in the grid (by index)
         self.covered_cells_vid = []
@@ -89,8 +96,7 @@ class MOTNDP(gym.Env):
     def _get_info(self):
         return {'segments': self.covered_segments, 'action_mask': self.action_mask}
     
-    def _calculate_reward(self, segment, use_pct=True):
-        # DO NOT SET use_pct to false, because it will render the reward_space useless
+    def _calculate_reward(self, segment):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
         if segment in self.covered_segments:
@@ -104,7 +110,7 @@ class MOTNDP(gym.Env):
             sat_group_ods[i] = (g_od * sat_od_mask).sum().item()
             sat_group_ods_pct[i] = sat_group_ods[i] / g_od.sum()
 
-        if use_pct:
+        if self.od_type == 'pct':
             group_rw = sat_group_ods_pct
         else:
             group_rw = sat_group_ods
