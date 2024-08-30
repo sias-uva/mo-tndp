@@ -42,7 +42,6 @@ if __name__ == '__main__':
             ignore_existing_lines=True
     )
     
-    # TODO rethink: I do not like that constraints take the city as an argument, but it is what it is for now
     env = gymnasium.make('motndp_dilemma-v0', city=city, constraints=MetroConstraints(city), nr_stations=nr_stations)
 
     Q = np.zeros((env.observation_space.n, env.action_space.n))
