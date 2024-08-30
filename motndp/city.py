@@ -81,7 +81,7 @@ class City(object):
         """
         processed_lines = []
         for l in lines:
-            l = np.array(l).long()
+            l = np.array(l).astype(np.int64)
             # Convert grid indices (x,y) to vector indices (x^)
             l = self.grid_to_vector(l)
             processed_lines.append(l)
@@ -121,25 +121,28 @@ class City(object):
         # If intersection is found, we add the extra satisfied ODs
         for i, line_full in enumerate(self.existing_lines_full):
             line = self.existing_lines[i]
-            intersection_full_line = ((tour_idx - line_full) == 0).nonzero()
-            if intersection_full_line.size()[0] != 0:
-                intersection_station_line = ((tour_idx - line) == 0).nonzero()
+            intersection_full_line = np.transpose(((tour_idx - line_full) == 0).nonzero())
+            if intersection_full_line.shape[0] != 0:
+                intersection_station_line = np.transpose(((tour_idx - line) == 0).nonzero())
 
                 # We filter the line grids based on the intersection between the new line and the sations of old lines.
-                line_mask = np.ones(line.numel(), dtype=np.bool)
+                line_mask = np.ones(line.size, dtype=bool)
                 line_mask[intersection_station_line[:, 0]] = False
                 line_connections = line[line_mask]
                 
                 # We filter the tour grids based on the intersection between the new line and the full old lines.
                 # Note: here we use the full line filter, because we want to leave out the connection of the intersection
                 # between the new line and existing line stations, as we assume this is already covered by the existing lines.
-                tour_mask = np.ones(tour_idx.numel(), dtype=np.bool)
+                tour_mask = np.ones(tour_idx.size, dtype=bool)
                 tour_mask[intersection_full_line[:, 1]] = False
                 # Note this won't work with multi-dimensional tour_idx
-                tour_connections = tour_idx[0, tour_mask]
+                tour_connections = tour_idx[tour_mask]
 
-                conn_sat_od_pairs = np.cartesian_prod(tour_connections, line_connections.flatten())
-                sat_od_pairs = np.cat((sat_od_pairs, conn_sat_od_pairs))
+                # Create the Cartesian product using np.meshgrid
+                tour_connections, line_connections = np.meshgrid(tour_connections, line_connections.flatten(), indexing='ij')
+                conn_sat_od_pairs = np.vstack([tour_connections.ravel(), line_connections.ravel()]).T
+                
+                sat_od_pairs = np.concatenate((sat_od_pairs, conn_sat_od_pairs))
         
         # Calculate a mask over the OD matrix, based on the satisfied OD pairs.
         od_mask = np.zeros((self.grid_size, self.grid_size))
@@ -171,10 +174,6 @@ class City(object):
         # Used to calculate distances from each grid cell, etc.
         mesh = np.meshgrid(np.arange(0, self.grid_x_size), np.arange(0, self.grid_y_size))
         self.grid_indices = np.dstack((mesh[0].flatten(), mesh[1].flatten())).squeeze()
-
-        # size of the model's static and dynamic parts
-        # self.static_size = config.getint('config', 'static_size')
-        # self.dynamic_size = config.getint('config', 'dynamic_size')
 
         # Build the normalized OD and SES matrices.
         self.od_mx = matrix_from_file(env_path / 'od.txt', self.grid_size, self.grid_size)
@@ -213,8 +212,8 @@ class City(object):
             existing_lines_full = self.process_lines(json.loads(config.get('config', 'existing_lines_full')))
 
             # Create line tensors
-            self.existing_lines = [l.view(len(l), 1) for l in existing_lines]
-            self.existing_lines_full = [l.view(len(l), 1) for l in existing_lines_full]
+            self.existing_lines = [l.reshape(len(l), 1) for l in existing_lines]
+            self.existing_lines_full = [l.reshape(len(l), 1) for l in existing_lines_full]
         else:
             self.existing_lines = []
             self.existing_lines_full = []
@@ -223,14 +222,15 @@ class City(object):
         if config.has_option('config', 'excluded_od_segments'):
             exclude_segments = self.process_lines(json.loads(config.get('config', 'excluded_od_segments')))
             if len(exclude_segments) > 0:
-                exclude_pairs = np.array([]).long()
+                exclude_pairs = np.empty((0, 2), dtype=np.int64)
                 for s in exclude_segments:
                     # Create two-way combinations of each segment.
                     # e.g. segment: 1-2-3-4, pairs: 1-2, 2-1, 1-3, 3-1, 1-4, 4-1, ... etc
-                    pair1 = np.combinations(s, 2)
-                    pair2 = np.combinations(s.flip(0), 2)
+                    
+                    pair1 = np.array(list(itertools.combinations(s, 2)))
+                    pair2 = np.array(list(itertools.combinations(s[::-1], 2)))
 
-                    exclude_pairs = np.cat((exclude_pairs, pair1, pair2))
+                    exclude_pairs = np.concatenate((exclude_pairs, pair1, pair2))
             
                 self.od_mx[exclude_pairs[:, 0], exclude_pairs[:, 1]] = 0
 
