@@ -92,6 +92,18 @@ class City(object):
 
         return mask
     
+    def agg_od_mx(self):
+        """Calculates the aggregate origin-destination flow matrix for each grid cell in the city (inflows + outflows). Can be used for visualization purposes.
+
+        Returns:
+            np.array: aggregate od by grid
+        """
+        agg_od_g = np.zeros((self.grid_x_size, self.grid_y_size))
+        for i in range(self.grid_size):
+            g = self.vector_to_grid(np.array([i]))[0]
+            agg_od_g[g[0], g[1]] = np.sum(self.od_mx[i])
+
+        return agg_od_g
     def connections_with_existing_lines(self, segment):
         # Satisfied OD pairs from the new segment, by considering connections to existing lines.
         # For each segment, we look for intersections to the existing lines (full, not only grids with stations).
