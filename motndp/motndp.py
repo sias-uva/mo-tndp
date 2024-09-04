@@ -50,6 +50,8 @@ class MOTNDP(gym.Env):
         self.covered_cells_gid = [] 
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
+        # Stations from the existing lines that are connected to the line that the agent is currently building.
+        self.connections_with_existing_lines = []
         self.observation_space = spaces.Discrete(self.city.grid_size)
 
         # We have 8 actions, corresponding to
@@ -107,12 +109,21 @@ class MOTNDP(gym.Env):
 
         if segment in self.covered_segments:
             return np.zeros(len(self.city.group_od_mx))
-        
+
         segment = np.array(segment)
         if self.chained_reward:
-            sat_od_mask = self.city.satisfied_od_mask(segment, np.array(self.covered_cells_vid))
+            cells_to_chain = np.array(self.covered_cells_vid)
+            
+            # Look for the cells of the existing lines that are connected to the new segment
+            connected_stations = self.city.connections_with_existing_lines(segment)
+            if len(connected_stations) > 0:
+                self.connections_with_existing_lines.extend(connected_stations)
+                # Remove duplicates
+                self.connections_with_existing_lines = list(set(self.connections_with_existing_lines))
+            
+            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(segment, cells_to_chain=cells_to_chain, connected_cells=np.array(self.connections_with_existing_lines), segments_to_ignore=self.covered_segments, return_od_pairs=True)
         else:
-            sat_od_mask = self.city.satisfied_od_mask(segment)
+            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(segment, segments_to_ignore=self.covered_segments, return_od_pairs=True)
             
         sat_group_ods = np.zeros(len(self.city.group_od_mx))
         sat_group_ods_pct = np.zeros(len(self.city.group_od_mx))
@@ -125,7 +136,7 @@ class MOTNDP(gym.Env):
         else:
             group_rw = sat_group_ods
         
-        return group_rw
+        return group_rw, sat_od_pairs
     
     def _update_agent_location(self, new_location):
         """Given the new location of the agent in grid coordinates (x, y), update a number of internal variables.
@@ -172,12 +183,10 @@ class MOTNDP(gym.Env):
         self.covered_cells_vid = [self.city.grid_to_vector(self._agent_location[None, :]).item()]
         self.covered_cells_gid = [self._agent_location]
         self.covered_segments = []
+        self.connections_with_existing_lines = []
 
         self._update_action_mask(self._agent_location)
         observation = self._get_obs()
-
-        # if self.render_mode == "human":
-        #     self._render_frame()
 
         return observation, self._get_info()
     
@@ -195,10 +204,13 @@ class MOTNDP(gym.Env):
             # We add a new dimension to the agent's location to match grid_to_vector's generalization
             from_idx = self.city.grid_to_vector(self._agent_location[None, :]).item()
             to_idx = self.city.grid_to_vector(new_location[None, :]).item()
-            reward = self._calculate_reward([from_idx, to_idx])
+            reward, sat_od_pairs = self._calculate_reward([from_idx, to_idx])
+            
+            # Update the covered segments and cells, based on sat_od_pairs
+            for pair in sat_od_pairs:
+                self.covered_segments.append(pair.tolist())
+                self.covered_segments.append(pair[::-1].tolist()) # add the reverse OD pair 
 
-            self.covered_segments.append([from_idx, to_idx])
-            self.covered_segments.append([to_idx, from_idx])
             self.covered_cells_vid.append(to_idx)
             self.covered_cells_gid.append(new_location)
 
@@ -224,4 +236,3 @@ class MOTNDP(gym.Env):
 
         # We return the observation, the reward, whether the episode is done, truncated=False and no info
         return observation, reward, terminated, False, info
-

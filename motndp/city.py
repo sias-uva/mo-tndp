@@ -59,16 +59,6 @@ class City(object):
             return np.array([grid_x, grid_y])
         
         return np.column_stack((grid_x, grid_y))
-
-        # Control for when vector_idx is just a tensor of 1 idx vs when it is a tensor of multiple idxs.
-        # TODO: maybe there is a way to do that universally without if
-        # if vector_idx.dim() == 0:
-        #     grid_x = grid_x.view(1)
-        #     grid_y = grid_y.view(1)
-
-        #     return np.cat((grid_x, grid_y), dim=0).view(1, 2)
-
-        # return np.cat((grid_x, grid_y), dim=0)
         
     def process_lines(self, lines):
         """Creates a list of tensors for each line, from given grid indices. Used to create line/segment representations of metro lines.
@@ -102,28 +92,11 @@ class City(object):
 
         return mask
     
-    def satisfied_od_mask(self, segment, cells_to_chain=None):
-        """Computes a boolean mask of the satisfied OD flows of a given segment.
-
-        Args:
-            segment (np.array): vector indices resembling a segment.
-            cells_to_chain (np.array): vector indices of cells that are connected to the segment. If not None, the ODs of these cells and the new added cell will be summed to the reward.
-
-        Returns:
-            np.array: mask of self.grid_size * self.grid_size of satisfied OD flows.
-        """
-        # Satisfied OD pairs from the new segment, only considering the new segment od demand.
-        sat_od_pairs = np.array(list(itertools.combinations(segment.flatten(), 2)))
-
-        # If there are previous cells to chain, add the OD pairs of the new segment to these cells.
-        if cells_to_chain is not None:
-            # Only chain to cells that are not in the segment, but previously placed stations
-            cells_to_chain = cells_to_chain[cells_to_chain != segment[0]]
-            sat_od_pairs = np.concatenate((sat_od_pairs, np.column_stack((cells_to_chain, np.full(len(cells_to_chain), segment[1])))))
-                
+    def connections_with_existing_lines(self, segment):
         # Satisfied OD pairs from the new segment, by considering connections to existing lines.
         # For each segment, we look for intersections to the existing lines (full, not only grids with stations).
         # If intersection is found, we add the extra satisfied ODs
+        connected_stations = []
         for i, line_full in enumerate(self.existing_lines_full):
             line = self.existing_lines[i]
             intersection_full_line = np.transpose(((segment - line_full) == 0).nonzero())
@@ -135,23 +108,52 @@ class City(object):
                 line_mask[intersection_station_line[:, 0]] = False
                 line_connections = line[line_mask]
                 
-                # We filter the tour grids based on the intersection between the new line and the full old lines.
-                # Note: here we use the full line filter, because we want to leave out the connection of the intersection
-                # between the new line and existing line stations, as we assume this is already covered by the existing lines.
-                segment_mask = np.ones(segment.size, dtype=bool)
-                segment_mask[intersection_full_line[:, 1]] = False
-                # Note this won't work with multi-dimensional segment
-                segment_connections = segment[segment_mask]
-
-                # Create the Cartesian product using np.meshgrid
-                segment_connections, line_connections = np.meshgrid(segment_connections, line_connections.flatten(), indexing='ij')
-                conn_sat_od_pairs = np.vstack([segment_connections.ravel(), line_connections.ravel()]).T
+                connected_stations.extend(line_connections.flatten().tolist())
                 
-                sat_od_pairs = np.concatenate((sat_od_pairs, conn_sat_od_pairs))
+        return connected_stations
+
+    
+    def satisfied_od_mask(self, segment, cells_to_chain=None, connected_cells=None, segments_to_ignore=None, return_od_pairs=False):
+        """Computes a boolean mask of the satisfied OD flows of a given segment.
+
+        Args:
+            segment (np.array): vector indices resembling a segment.
+            cells_to_chain (np.array): vector indices of cells that are connected to the segment. If not None, the OD flows between these cells and the new added cell will be summed to the reward.
+            connected_cells (np.array): vector indices of cells that are connected to the segment, from the existing lines. If not None, the OD flows between these cells and the line cells will be summed to the reward.
+            segments_to_ignore (list): list of segments to ignore when calculating the OD mask. Used to ignore the OD flows of the segments that are already placed.
+            return_od_pairs (boolean): if set to true, the function will return the satisfied OD pairs of the given segment.
+
+        Returns:
+            np.array: a boolean mask of the satisfied OD flows of the given segment.
+            np.array: the satisfied OD pairs of the given segment.
+        """
+        # Satisfied OD pairs from the new segment. Note that the segment can be multiple consecutive cells (more than 2).
+        sat_od_pairs = np.array(list(itertools.combinations(segment.flatten(), 2)))
+
+        # If there are previous cells to chain, add the OD pairs of the new segment to these cells.
+        if cells_to_chain is not None and len(cells_to_chain) > 0:
+            # Only chain to cells that are not in the segment, but previously placed stations
+            cells_to_chain = cells_to_chain[cells_to_chain != segment[0]]
+            sat_od_pairs = np.concatenate((sat_od_pairs, np.column_stack((cells_to_chain, np.full(len(cells_to_chain), segment[1])))))
+        
+        if connected_cells is not None and len(connected_cells) > 0:
+            filtered_segment = segment[~np.isin(segment, np.concatenate(self.existing_lines))]
+            # Get the cells of the new line to be connected to the existing line.
+            new_line_cells = np.concatenate((filtered_segment, cells_to_chain))
+            sat_od_pairs = np.concatenate((sat_od_pairs, np.array(np.meshgrid(new_line_cells, connected_cells)).T.reshape(-1, 2)))
+                
+        # If there are segments to ignore, remove the OD pairs of the new segment that are in the ignored segments.
+        if segments_to_ignore is not None and len(segments_to_ignore) > 0:
+            ignore_pairs = np.concatenate([np.all((sat_od_pairs == np.array(s).flatten()), axis=1)[:, None] for s in segments_to_ignore], axis=1)
+            ignore_mask = np.any(ignore_pairs, axis=1)
+            sat_od_pairs = sat_od_pairs[~ignore_mask]
         
         # Calculate a mask over the OD matrix, based on the satisfied OD pairs.
         od_mask = np.zeros((self.grid_size, self.grid_size))
         od_mask[sat_od_pairs[:, 0], sat_od_pairs[:, 1]] = 1
+        
+        if return_od_pairs:
+            return od_mask, sat_od_pairs
         
         return od_mask
 
@@ -188,6 +190,46 @@ class City(object):
             self.price_mx_norm = self.price_mx / np.max(self.price_mx)
         except FileNotFoundError:
             print('Price matrix not available.')
+            
+        # Read existing metro lines of the environment.
+        if not ignore_existing_lines and config.has_option('config', 'existing_lines'):
+            # json is used to load lists from ConfigParser as there is no built in way to do it.
+            existing_lines = self.process_lines(json.loads(config.get('config', 'existing_lines')))
+            # Full lines contains the lines + the squares between consecutive stations e.g. if line is (0,0)-(0,2)-(2,2) then full line also includes (0,1), (1,2).
+            # These are important for when calculating connections between generated & lines and existing lines.
+            existing_lines_full = self.process_lines(json.loads(config.get('config', 'existing_lines_full')))
+
+            # Create line tensors
+            self.existing_lines = [l.reshape(len(l), 1) for l in existing_lines]
+            self.existing_lines_full = [l.reshape(len(l), 1) for l in existing_lines_full]
+            
+            # Exclude satisfied OD pairs from the existing lines.
+            exclude_line_pairs = np.empty((0, 2), dtype=np.int64)
+            for l in existing_lines:
+                pair1 = np.array(list(itertools.combinations(l, 2)))
+                pair2 = np.array(list(itertools.combinations(l[::-1], 2)))
+                
+                exclude_line_pairs = np.concatenate((exclude_line_pairs, pair1, pair2))
+            self.od_mx[exclude_line_pairs[:, 0], exclude_line_pairs[:, 1]] = 0
+        else:
+            self.existing_lines = []
+            self.existing_lines_full = []
+            
+        # Apply excluded OD segments to the od_mx. E.g. segments very close to the current lines that we want to set OD to 0.
+        if config.has_option('config', 'excluded_od_segments'):
+            exclude_segments = self.process_lines(json.loads(config.get('config', 'excluded_od_segments')))
+            if len(exclude_segments) > 0:
+                exclude_pairs = np.empty((0, 2), dtype=np.int64)
+                for s in exclude_segments:
+                    # Create two-way combinations of each segment.
+                    # e.g. segment: 1-2-3-4, pairs: 1-2, 2-1, 1-3, 3-1, 1-4, 4-1, ... etc
+                    
+                    pair1 = np.array(list(itertools.combinations(s, 2)))
+                    pair2 = np.array(list(itertools.combinations(s[::-1], 2)))
+
+                    exclude_pairs = np.concatenate((exclude_pairs, pair1, pair2))
+            
+                self.od_mx[exclude_pairs[:, 0], exclude_pairs[:, 1]] = 0
         
         # If there are group memberships of each grid square, then create an OD matrix for each group.
         self.group_od_mx = None # initialize it so we can check later on if it has any value
@@ -206,38 +248,6 @@ class City(object):
                 group_mask[group_squares, :] = 1
                 group_mask[:, group_squares] = 1
                 self.group_od_mx.append(group_mask * self.od_mx)
-        
-
-        # Read existing metro lines of the environment.
-        if not ignore_existing_lines and config.has_option('config', 'existing_lines'):
-            # json is used to load lists from ConfigParser as there is no built in way to do it.
-            existing_lines = self.process_lines(json.loads(config.get('config', 'existing_lines')))
-            # Full lines contains the lines + the squares between consecutive stations e.g. if line is (0,0)-(0,2)-(2,2) then full line also includes (0,1), (1,2).
-            # These are important for when calculating connections between generated & lines and existing lines.
-            existing_lines_full = self.process_lines(json.loads(config.get('config', 'existing_lines_full')))
-
-            # Create line tensors
-            self.existing_lines = [l.reshape(len(l), 1) for l in existing_lines]
-            self.existing_lines_full = [l.reshape(len(l), 1) for l in existing_lines_full]
-        else:
-            self.existing_lines = []
-            self.existing_lines_full = []
-
-        # Apply excluded OD segments to the od_mx. E.g. segments very close to the current lines that we want to set OD to 0.
-        if config.has_option('config', 'excluded_od_segments'):
-            exclude_segments = self.process_lines(json.loads(config.get('config', 'excluded_od_segments')))
-            if len(exclude_segments) > 0:
-                exclude_pairs = np.empty((0, 2), dtype=np.int64)
-                for s in exclude_segments:
-                    # Create two-way combinations of each segment.
-                    # e.g. segment: 1-2-3-4, pairs: 1-2, 2-1, 1-3, 3-1, 1-4, 4-1, ... etc
-                    
-                    pair1 = np.array(list(itertools.combinations(s, 2)))
-                    pair2 = np.array(list(itertools.combinations(s[::-1], 2)))
-
-                    exclude_pairs = np.concatenate((exclude_pairs, pair1, pair2))
-            
-                self.od_mx[exclude_pairs[:, 0], exclude_pairs[:, 1]] = 0
 
         # Create the static representation of the grid coordinates - to be used by the actor.
         xs, ys = [], []
