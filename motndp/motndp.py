@@ -108,7 +108,7 @@ class MOTNDP(gym.Env):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
         if segment in self.covered_segments:
-            return np.zeros(len(self.city.group_od_mx))
+            return np.zeros(len(self.city.group_od_mx)), np.empty((0, 2))
 
         segment = np.array(segment)
         if self.chained_reward:
