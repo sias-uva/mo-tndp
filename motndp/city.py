@@ -203,6 +203,7 @@ class City(object):
         except FileNotFoundError:
             print('Price matrix not available.')
             
+        self.ignore_existing_lines = ignore_existing_lines
         # Read existing metro lines of the environment.
         if not ignore_existing_lines and config.has_option('config', 'existing_lines'):
             # json is used to load lists from ConfigParser as there is no built in way to do it.
