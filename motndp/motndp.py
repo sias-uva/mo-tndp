@@ -136,6 +136,12 @@ class MOTNDP(gym.Env):
         else:
             group_rw = sat_group_ods
         
+        ##### TODO delete this
+        non_zero_od = (g_od * sat_od_mask).nonzero()
+        non_zero_pairs = np.array([non_zero_od[0].tolist(), non_zero_od[1].tolist()]).T
+        self.all_sat_od_pairs.extend(non_zero_pairs.tolist())
+        #####
+        
         return group_rw, sat_od_pairs
     
     def _update_agent_location(self, new_location):
@@ -184,6 +190,9 @@ class MOTNDP(gym.Env):
         self.covered_cells_gid = [self._agent_location]
         self.covered_segments = []
         self.connections_with_existing_lines = []
+        
+        # todo delete this
+        self.all_sat_od_pairs = []
 
         self._update_action_mask(self._agent_location)
         observation = self._get_obs()
