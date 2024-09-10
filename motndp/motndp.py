@@ -107,43 +107,56 @@ class MOTNDP(gym.Env):
     def _calculate_reward(self, segment):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
+        # Return zero rewards if segment is already covered
         if segment in self.covered_segments:
             return np.zeros(len(self.city.group_od_mx)), np.empty((0, 2))
 
-        segment = np.array(segment)
+        segment = np.asarray(segment)
         if self.chained_reward:
-            cells_to_chain = np.array(self.covered_cells_vid)
-            
-            # Look for the cells of the existing lines that are connected to the new segment
-            connected_stations = self.city.connections_with_existing_lines(segment)
-            if len(connected_stations) > 0:
-                self.connections_with_existing_lines.extend(connected_stations)
-                # Remove duplicates
-                self.connections_with_existing_lines = list(set(self.connections_with_existing_lines))
-            
-            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(segment, cells_to_chain=cells_to_chain, connected_cells=np.array(self.connections_with_existing_lines), segments_to_ignore=self.covered_segments, return_od_pairs=True)
-        else:
-            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(segment, segments_to_ignore=self.covered_segments, return_od_pairs=True)
-            
-        sat_group_ods = np.zeros(len(self.city.group_od_mx))
-        sat_group_ods_pct = np.zeros(len(self.city.group_od_mx))
-        for i, g_od in enumerate(self.city.group_od_mx):
-            sat_group_ods[i] = (g_od * sat_od_mask).sum().item()
-            sat_group_ods_pct[i] = sat_group_ods[i] / g_od.sum()
+            # Convert covered cells to numpy array (if not already)
+            cells_to_chain = np.asarray(self.covered_cells_vid)
 
-        if self.od_type == 'pct':
-            group_rw = sat_group_ods_pct
+            # Get stations connected to the new segment
+            connected_stations = self.city.connections_with_existing_lines(segment)
+            
+            # Extend only if connected stations exist
+            if connected_stations:
+                self.connections_with_existing_lines = list(set(self.connections_with_existing_lines).union(connected_stations))
+
+            # Get the satisfied OD mask with connections and cells to chain
+            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(
+                segment, 
+                cells_to_chain=cells_to_chain, 
+                connected_cells=np.asarray(self.connections_with_existing_lines), 
+                segments_to_ignore=self.covered_segments, 
+                return_od_pairs=True
+            )
         else:
-            group_rw = sat_group_ods
+            # Get the satisfied OD mask without chained reward
+            sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(
+                segment, 
+                segments_to_ignore=self.covered_segments, 
+                return_od_pairs=True
+            )
+
+        # Pre-compute the sum of each group OD
+        group_od_sum = np.array([g_od.sum() for g_od in self.city.group_od_mx])
+
+        # Compute satisfied group ODs and their percentages
+        sat_group_ods = np.array([(g_od * sat_od_mask).sum() for g_od in self.city.group_od_mx])
+        sat_group_ods_pct = np.divide(sat_group_ods, group_od_sum, out=np.zeros_like(sat_group_ods), where=group_od_sum != 0)
+
+        # Determine reward type (percentage or absolute)
+        group_rw = sat_group_ods_pct if self.od_type == 'pct' else sat_group_ods
         
         ##### TODO delete this
-        non_zero_od = (g_od * sat_od_mask).nonzero()
-        non_zero_pairs = np.array([non_zero_od[0].tolist(), non_zero_od[1].tolist()]).T
-        self.all_sat_od_pairs.extend(non_zero_pairs.tolist())
+        # non_zero_od = (g_od * sat_od_mask).nonzero()
+        # non_zero_pairs = np.array([non_zero_od[0].tolist(), non_zero_od[1].tolist()]).T
+        # self.all_sat_od_pairs.extend(non_zero_pairs.tolist())
         #####
-        
+
         return group_rw, sat_od_pairs
-    
+        
     def _update_agent_location(self, new_location):
         """Given the new location of the agent in grid coordinates (x, y), update a number of internal variables.
         _agent_location: the new location of the agent in grid coordinates (x, y)

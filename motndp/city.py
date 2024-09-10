@@ -161,7 +161,7 @@ class City(object):
             sat_od_pairs = sat_od_pairs[~ignore_mask]
         
         # Calculate a mask over the OD matrix, based on the satisfied OD pairs.
-        od_mask = np.zeros((self.grid_size, self.grid_size))
+        od_mask = np.zeros((self.grid_size, self.grid_size), dtype=np.uint8)
         od_mask[sat_od_pairs[:, 0], sat_od_pairs[:, 1]] = 1
         
         if return_od_pairs:
