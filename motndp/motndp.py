@@ -51,7 +51,7 @@ class MOTNDP(gym.Env):
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
         # Stations from the existing lines that are connected to the line that the agent is currently building.
-        self.connections_with_existing_lines = []
+        self.connections_with_existing_lines = set()
         self.observation_space = spaces.Discrete(self.city.grid_size)
 
         # We have 8 actions, corresponding to
@@ -121,13 +121,14 @@ class MOTNDP(gym.Env):
             
             # Extend only if connected stations exist
             if connected_stations:
-                self.connections_with_existing_lines = list(set(self.connections_with_existing_lines).union(connected_stations))
+                # self.connections_with_existing_lines = list(set(self.connections_with_existing_lines).union(connected_stations))
+                self.connections_with_existing_lines.update(connected_stations)
 
             # Get the satisfied OD mask with connections and cells to chain
             sat_od_mask, sat_od_pairs = self.city.satisfied_od_mask(
                 segment, 
                 cells_to_chain=cells_to_chain, 
-                connected_cells=np.asarray(self.connections_with_existing_lines), 
+                connected_cells=self.connections_with_existing_lines, 
                 segments_to_ignore=self.covered_segments, 
                 return_od_pairs=True
             )
@@ -139,12 +140,9 @@ class MOTNDP(gym.Env):
                 return_od_pairs=True
             )
 
-        # Pre-compute the sum of each group OD
-        group_od_sum = np.array([g_od.sum() for g_od in self.city.group_od_mx])
-
         # Compute satisfied group ODs and their percentages
         sat_group_ods = np.array([(g_od * sat_od_mask).sum() for g_od in self.city.group_od_mx])
-        sat_group_ods_pct = np.divide(sat_group_ods, group_od_sum, out=np.zeros_like(sat_group_ods), where=group_od_sum != 0)
+        sat_group_ods_pct = np.divide(sat_group_ods, self.city.group_od_sum, out=np.zeros_like(sat_group_ods), where=self.city.group_od_sum != 0)
 
         # Determine reward type (percentage or absolute)
         group_rw = sat_group_ods_pct if self.od_type == 'pct' else sat_group_ods
@@ -202,7 +200,7 @@ class MOTNDP(gym.Env):
         self.covered_cells_vid = [self.city.grid_to_vector(self._agent_location[None, :]).item()]
         self.covered_cells_gid = [self._agent_location]
         self.covered_segments = []
-        self.connections_with_existing_lines = []
+        self.connections_with_existing_lines = set()
         
         # todo delete this
         self.all_sat_od_pairs = []

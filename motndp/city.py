@@ -131,7 +131,7 @@ class City(object):
         Args:
             segment (np.array): vector indices resembling a segment.
             cells_to_chain (np.array): vector indices of cells that are connected to the segment. If not None, the OD flows between these cells and the new added cell will be summed to the reward.
-            connected_cells (np.array): vector indices of cells that are connected to the segment, from the existing lines. If not None, the OD flows between these cells and the line cells will be summed to the reward.
+            connected_cells (set): vector indices of cells that are connected to the segment, from the existing lines. If not None, the OD flows between these cells and the line cells will be summed to the reward.
             segments_to_ignore (list): list of segments to ignore when calculating the OD mask. Used to ignore the OD flows of the segments that are already placed.
             return_od_pairs (boolean): if set to true, the function will return the satisfied OD pairs of the given segment.
 
@@ -149,6 +149,7 @@ class City(object):
             sat_od_pairs = np.concatenate((sat_od_pairs, np.column_stack((cells_to_chain, np.full(len(cells_to_chain), segment[1])))))
         
         if connected_cells is not None and len(connected_cells) > 0:
+            connected_cells = np.array(list(connected_cells))
             filtered_segment = segment[~np.isin(segment, np.concatenate(self.existing_lines))]
             # Get the cells of the new line to be connected to the existing line.
             new_line_cells = np.concatenate((filtered_segment, cells_to_chain))
@@ -261,6 +262,9 @@ class City(object):
                 group_mask[group_squares, :] = 1
                 group_mask[:, group_squares] = 1
                 self.group_od_mx.append(group_mask * self.od_mx)
+                
+        # Total sum of OD flows by group, to be used for the reward calculation, but want to calculate only once.
+        self.group_od_sum = np.array([g_od.sum() for g_od in self.group_od_mx])
 
         # Create the static representation of the grid coordinates - to be used by the actor.
         xs, ys = [], []
