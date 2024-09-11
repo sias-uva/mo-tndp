@@ -64,6 +64,26 @@ class MetroConstraints(Constraints):
 
         self.city = city
 
+    def get_direction(self, current_location, visited_locations):
+        direction = current_location - visited_locations[-2]
+        direction[direction > 0] = 1
+        direction[direction < 0] = -1
+        
+        for loc in visited_locations[:-3]:
+            dir = current_location - loc
+            dir[dir > 0] = 1
+            dir[dir < 0] = -1
+
+            if np.array_equal(dir, self.dir_upleft):
+                direction = self.dir_upleft
+            elif np.array_equal(dir, self.dir_upright):
+                direction = self.dir_upright
+            elif np.array_equal(dir, self.dir_downleft):
+                direction = self.dir_downleft
+            elif np.array_equal(dir, self.dir_downright):
+                direction = self.dir_downright
+                
+        return direction
 
     def mask_actions(self, current_location, possible_next_locations, visited_locations):
         # Dont allow actions that go outside of the grid or to previously visited locations
@@ -77,10 +97,8 @@ class MetroConstraints(Constraints):
         if len(visited_locations) < 2:
             return action_mask
         
-        # get the direction of the agent (based on the last two visited locations)
-        direction = current_location - visited_locations[-2]
-        direction[direction > 0] = 1
-        direction[direction < 0] = -1
+        # get the direction of the agent (based on the last visited locations)
+        direction = self.get_direction(current_location, visited_locations)
 
         if len(visited_locations) > 2:
             # We want to detect indirect diagonal movement, e.g. up then left, or left then up and so on.
