@@ -102,7 +102,7 @@ class MOTNDP(gym.Env):
             return [self._agent_location_vid]
     
     def _get_info(self):
-        return {'segments': self.covered_segments, 'action_mask': self.action_mask}
+        return {'segments': self.covered_segments, 'action_mask': self.action_mask, 'covered_cells_vid': self.covered_cells_vid, 'covered_cells_gid': self.covered_cells_gid}
     
     def _calculate_reward(self, segment):
         assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
