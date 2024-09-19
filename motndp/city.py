@@ -147,21 +147,19 @@ class City(object):
             # Only chain to cells that are not in the segment, but previously placed stations
             cells_to_chain = cells_to_chain[cells_to_chain != segment[0]]
             sat_od_pairs = np.concatenate((sat_od_pairs, np.column_stack((cells_to_chain, np.full(len(cells_to_chain), segment[1])))))
-        
+
         if connected_cells is not None and len(connected_cells) > 0:
-            connected_cells = np.array(list(connected_cells))
-            filtered_segment = segment[~np.isin(segment, np.concatenate(self.existing_lines))]
+            connected_cells = np.asarray(list(connected_cells))  # or np.array() if the list is not iterable
+            filtered_segment = np.setdiff1d(segment, np.concatenate(self.existing_lines), assume_unique=True)
             # Get the cells of the new line to be connected to the existing line.
-            new_line_cells = np.concatenate((filtered_segment, cells_to_chain))
-            sat_od_pairs = np.concatenate((sat_od_pairs, np.array(np.meshgrid(new_line_cells, connected_cells)).T.reshape(-1, 2)))
-                
-        # If there are segments to ignore, remove the OD pairs of the new segment that are in the ignored segments.
-        if segments_to_ignore is not None and len(segments_to_ignore) > 0:
-            ignore_pairs = np.concatenate([np.all((sat_od_pairs == np.array(s).flatten()), axis=1)[:, None] for s in segments_to_ignore], axis=1)
-            ignore_mask = np.any(ignore_pairs, axis=1)
-            sat_od_pairs = sat_od_pairs[~ignore_mask]
+            new_line_cells = np.hstack((filtered_segment, cells_to_chain))
+            new_sat_od_pairs = np.array(np.stack(np.meshgrid(new_line_cells, connected_cells), axis=-1).reshape(-1, 2))
+            sat_od_pairs = np.vstack((sat_od_pairs, new_sat_od_pairs))
         
-        # Calculate a mask over the OD matrix, based on the satisfied OD pairs.
+        if segments_to_ignore is not None and len(segments_to_ignore) > 0:
+            ignore_set = set(map(tuple, segments_to_ignore))  # Convert to set for fast lookup
+            sat_od_pairs = np.array([pair for pair in sat_od_pairs if tuple(pair) not in ignore_set])
+
         od_mask = np.zeros((self.grid_size, self.grid_size), dtype=np.uint8)
         od_mask[sat_od_pairs[:, 0], sat_od_pairs[:, 1]] = 1
         
