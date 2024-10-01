@@ -252,14 +252,15 @@ class City(object):
             # Get all unique groups
             self.groups = np.unique(self.grid_groups[~np.isnan(self.grid_groups)])
             # Create a group-specific od matrix for each group.
-            self.group_od_mx = []
-            for g in self.groups:
+            
+            self.group_od_mx = np.zeros((len(self.groups), self.grid_size, self.grid_size))
+            for i, g in enumerate(self.groups):
                 group_mask = np.zeros(self.od_mx.shape)
                 group_squares = self.grid_to_vector(np.transpose(np.nonzero(self.grid_groups == g)))
                 # Original OD matrix is symmetrical, so group OD matrices should also be symmetrical.
                 group_mask[group_squares, :] = 1
                 group_mask[:, group_squares] = 1
-                self.group_od_mx.append(group_mask * self.od_mx)
+                self.group_od_mx[i] = group_mask * self.od_mx
                 
         # Total sum of OD flows by group, to be used for the reward calculation, but want to calculate only once.
         self.group_od_sum = np.array([g_od.sum() for g_od in self.group_od_mx])

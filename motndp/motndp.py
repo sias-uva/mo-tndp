@@ -105,11 +105,11 @@ class MOTNDP(gym.Env):
         return {'segments': self.covered_segments, 'action_mask': self.action_mask, 'covered_cells_vid': self.covered_cells_vid, 'covered_cells_gid': self.covered_cells_gid}
     
     def _calculate_reward(self, segment):
-        assert self.city.group_od_mx, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
+        assert self.city.group_od_mx is not None, 'Cannot use multi-objective reward without group definitions. Provide --groups_file argument'
 
         # Return zero rewards if segment is already covered
         if segment in self.covered_segments:
-            return np.zeros(len(self.city.group_od_mx)), np.empty((0, 2))
+            return np.zeros(self.city.group_od_mx.shape[0]), np.empty((0, 2))
 
         segment = np.asarray(segment)
         if self.chained_reward:
@@ -140,8 +140,8 @@ class MOTNDP(gym.Env):
                 return_od_pairs=True
             )
 
-        # Compute satisfied group ODs and their percentages
-        sat_group_ods = np.array([(g_od * sat_od_mask).sum() for g_od in self.city.group_od_mx])
+        # Compute satisfied group ODs and their percentages        
+        sat_group_ods = (self.city.group_od_mx * sat_od_mask).sum(axis=(1, 2))
         sat_group_ods_pct = np.divide(sat_group_ods, self.city.group_od_sum, out=np.zeros_like(sat_group_ods), where=self.city.group_od_sum != 0)
 
         # Determine reward type (percentage or absolute)
