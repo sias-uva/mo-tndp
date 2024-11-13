@@ -147,12 +147,6 @@ class MOTNDP(gym.Env):
         # Determine reward type (percentage or absolute)
         group_rw = sat_group_ods_pct if self.od_type == 'pct' else sat_group_ods
         
-        ##### TODO delete this
-        # non_zero_od = (g_od * sat_od_mask).nonzero()
-        # non_zero_pairs = np.array([non_zero_od[0].tolist(), non_zero_od[1].tolist()]).T
-        # self.all_sat_od_pairs.extend(non_zero_pairs.tolist())
-        #####
-
         return group_rw, sat_od_pairs
         
     def _update_agent_location(self, new_location):
@@ -202,9 +196,6 @@ class MOTNDP(gym.Env):
         self.covered_segments = []
         self.connections_with_existing_lines = set()
         
-        # todo delete this
-        self.all_sat_od_pairs = []
-
         self._update_action_mask(self._agent_location)
         observation = self._get_obs()
 
@@ -240,10 +231,6 @@ class MOTNDP(gym.Env):
             self._update_action_mask(self._agent_location, action)
         else:
             raise Exception("Not allowed action was taken. Make sure you apply the constraints to the action selection.")
-            # reward = np.zeros(self.nr_groups)
-            # TODO reconsider if this counter should be here (because the agent is not moving, thus there is no station placed). 
-            # if I remove it I need to consider that the episode needs to terminate somehow.
-            # self.stations_placed += 1
 
         # An episode is done if the agent has placed all stations under the budget or if there's no more actions to take
         terminated = self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0
