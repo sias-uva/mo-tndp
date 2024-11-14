@@ -26,27 +26,18 @@ class MOTNDP(gym.Env):
         assert obs_type in ['full_dict', 'location_vector', 'location', 'location_vid'], 'Invalid observation type. Choose one of: full_dict, location_vector, location, location_vid'
         assert od_type in ['pct', 'abs'], 'Invalid Origin-Destination Type. Choose one of: pct, abs'
         
-        # city environment
         self.city = city
-        # action-masking constraints
         self.mask_actions = constraints.mask_actions
-        # total number of stations (steps) to place
         self.nr_stations = nr_stations
-        # default starting location of the agent
         self.starting_loc = starting_loc
-        # observation type
         self.observation_type = obs_type
-        # origin-destination calculation type
         self.od_type = od_type
-        # chained reward
         # An example of the chained reward: Episode with two actions leads to transport line 1 -> 2 -> 3. 
         # If chained_reward is false, the reward received after the second action will be the OD between 2-3.
         # If chained_reward is true, the reward received after the second action will be the OD between 2-3 AND 1-3, because station 1 and 3 are now connected (and therefore their demand is deemed satisfied).
         self.chained_reward = chained_reward
         self.stations_placed = 0
-        # visited cells in the grid (by index)
         self.covered_cells_vid = []
-        # visited cells in the grid (by coordinate)
         self.covered_cells_gid = [] 
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
