@@ -39,5 +39,3 @@ if __name__ == '__main__':
                 break
 
             state = new_state
-
-    print('all good')

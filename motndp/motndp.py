@@ -26,27 +26,18 @@ class MOTNDP(gym.Env):
         assert obs_type in ['full_dict', 'location_vector', 'location', 'location_vid'], 'Invalid observation type. Choose one of: full_dict, location_vector, location, location_vid'
         assert od_type in ['pct', 'abs'], 'Invalid Origin-Destination Type. Choose one of: pct, abs'
         
-        # city environment
         self.city = city
-        # action-masking constraints
         self.mask_actions = constraints.mask_actions
-        # total number of stations (steps) to place
         self.nr_stations = nr_stations
-        # default starting location of the agent
         self.starting_loc = starting_loc
-        # observation type
         self.observation_type = obs_type
-        # origin-destination calculation type
         self.od_type = od_type
-        # chained reward
         # An example of the chained reward: Episode with two actions leads to transport line 1 -> 2 -> 3. 
         # If chained_reward is false, the reward received after the second action will be the OD between 2-3.
         # If chained_reward is true, the reward received after the second action will be the OD between 2-3 AND 1-3, because station 1 and 3 are now connected (and therefore their demand is deemed satisfied).
         self.chained_reward = chained_reward
         self.stations_placed = 0
-        # visited cells in the grid (by index)
         self.covered_cells_vid = []
-        # visited cells in the grid (by coordinate)
         self.covered_cells_gid = [] 
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
@@ -147,12 +138,6 @@ class MOTNDP(gym.Env):
         # Determine reward type (percentage or absolute)
         group_rw = sat_group_ods_pct if self.od_type == 'pct' else sat_group_ods
         
-        ##### TODO delete this
-        # non_zero_od = (g_od * sat_od_mask).nonzero()
-        # non_zero_pairs = np.array([non_zero_od[0].tolist(), non_zero_od[1].tolist()]).T
-        # self.all_sat_od_pairs.extend(non_zero_pairs.tolist())
-        #####
-
         return group_rw, sat_od_pairs
         
     def _update_agent_location(self, new_location):
@@ -169,7 +154,7 @@ class MOTNDP(gym.Env):
         self._agent_location_vector = np.zeros(self.observation_space.n)
         self._agent_location_vector[self._agent_location_vid] = 1
     
-    def _update_action_mask(self, location, prev_action=None):
+    def _update_action_mask(self, location):
         # Apply action mask based on the location of the agent (it should stay inside the grid) & previously visited cells (it should not visit the same cell twice)
         possible_locations = location + self._action_to_direction
         self.action_mask = self.mask_actions(location, possible_locations, self.covered_cells_gid)
@@ -202,9 +187,6 @@ class MOTNDP(gym.Env):
         self.covered_segments = []
         self.connections_with_existing_lines = set()
         
-        # todo delete this
-        self.all_sat_od_pairs = []
-
         self._update_action_mask(self._agent_location)
         observation = self._get_obs()
 
@@ -240,10 +222,6 @@ class MOTNDP(gym.Env):
             self._update_action_mask(self._agent_location)
         else:
             raise Exception("Not allowed action was taken. Make sure you apply the constraints to the action selection.")
-            # reward = np.zeros(self.nr_groups)
-            # TODO reconsider if this counter should be here (because the agent is not moving, thus there is no station placed). 
-            # if I remove it I need to consider that the episode needs to terminate somehow.
-            # self.stations_placed += 1
 
         # An episode is done if the agent has placed all stations under the budget or if there's no more actions to take
         terminated = self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0

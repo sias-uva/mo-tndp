@@ -76,21 +76,6 @@ class City(object):
             l = self.grid_to_vector(l)
             processed_lines.append(l)
         return processed_lines
-
-    def update_mask(self, vector_index_allow):
-        """Updates the selection mask. Only allowed next locations are assigned 1, all others 0.
-        This prevents re-selecting locations.
-
-        Args:
-            vector_index_allow (np.array): Allowed locations(indices) to be selected.
-
-        Returns:
-            np.array: the updated mask of allowed next locations.
-        """
-        mask_initial = np.zeros(1, self.grid_size).long() # 1 : bacth_size
-        mask = mask_initial.index_fill_(1, vector_index_allow, 1).float()  # the first 1: dim , the second 1: value
-
-        return mask
     
     def agg_od_mx(self):
         """Calculates the aggregate origin-destination flow matrix for each grid cell in the city (inflows + outflows). Can be used for visualization purposes.
@@ -191,14 +176,12 @@ class City(object):
         # Create a (1, grid_size) grid where each cell is represented by its [x,y] indices.
         # Used to calculate distances from each grid cell, etc.
         mesh = np.meshgrid(np.arange(0, self.grid_x_size), np.arange(0, self.grid_y_size))
-        self.grid_indices = np.dstack((mesh[0].flatten(), mesh[1].flatten())).squeeze()
 
         # Build the normalized OD and SES matrices.
         self.od_mx = matrix_from_file(env_path / 'od.txt', self.grid_size, self.grid_size)
         self.od_mx = self.od_mx / np.max(self.od_mx)
         try:
             self.price_mx = matrix_from_file(env_path / 'average_house_price_gid.txt', self.grid_x_size, self.grid_y_size)
-            self.price_mx_norm = self.price_mx / np.max(self.price_mx)
         except FileNotFoundError:
             print('Price matrix not available.')
             
@@ -265,10 +248,3 @@ class City(object):
         # Total sum of OD flows by group, to be used for the reward calculation, but want to calculate only once.
         self.group_od_sum = np.array([g_od.sum() for g_od in self.group_od_mx])
 
-        # Create the static representation of the grid coordinates - to be used by the actor.
-        xs, ys = [], []
-        for i in range(self.grid_x_size):
-            for j in range(self.grid_y_size):
-                xs.append(i)
-                ys.append(j)
-        self.static = np.array([[xs, ys]]) # should be float32
