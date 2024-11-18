@@ -137,7 +137,7 @@ class MOTNDP(gym.Env):
         segment = np.asarray(segment)
         if self.chained_reward:
             # Convert covered cells to numpy array (if not already)
-            cells_to_chain = np.asarray(self.covered_cells_vid)
+            cells_to_chain = np.asarray(self.city.grid_to_index(np.array(self.covered_cells_gid)))
 
             # Get stations connected to the new segment
             connected_stations = self.city.connections_with_existing_lines(segment)
@@ -245,7 +245,7 @@ class MOTNDP(gym.Env):
             )
             self.stations_placed += 1
 
-            # We add a new dimension to the agent's location to match grid_to_vector's generalization
+            # We add a new dimension to the agent's location to match grid_to_index's generalization
             from_idx = self.city.grid_to_index(self._loc_grid_coordinates[None, :]).item()
             to_idx = self.city.grid_to_index(new_location[None, :]).item()
             reward, sat_od_pairs = self._calculate_reward([from_idx, to_idx])
