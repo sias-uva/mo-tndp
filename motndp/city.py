@@ -186,10 +186,6 @@ class City(object):
         self.grid_y_size = config.getint('config', 'grid_y_size')
         self.grid_size = self.grid_x_size * self.grid_y_size
 
-        # Create a (1, grid_size) grid where each cell is represented by its [x,y] indices.
-        # Used to calculate distances from each grid cell, etc.
-        mesh = np.meshgrid(np.arange(0, self.grid_x_size), np.arange(0, self.grid_y_size))
-
         # Build the normalized OD and SES matrices.
         self.od_mx = matrix_from_file(env_path / 'od.txt', self.grid_size, self.grid_size)
         self.od_mx = self.od_mx / np.max(self.od_mx)
