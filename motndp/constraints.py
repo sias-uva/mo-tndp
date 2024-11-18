@@ -39,8 +39,7 @@ class BasicConstraints(Constraints):
         action_mask = np.all(possible_next_locations >= 0, axis=1) &  \
                             (possible_next_locations[:, 0] < self.city.grid_x_size) & \
                             (possible_next_locations[:, 1] < self.city.grid_y_size) & \
-                            ~(possible_next_locations[:, None] == visited_locations).all(2).any(1) # mask out visited cells -> https://stackoverflow.com/questions/54828039/how-to-match-pairs-of-values-contained-in-two-numpy-arrays
-                            # np.all(~np.isin(possible_next_locations, visited_locations), axis=1) 
+                            ~(possible_next_locations[:, None] == visited_locations).all(2).any(1)
         
         return action_mask.astype(np.int8)
 
