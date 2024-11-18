@@ -59,6 +59,19 @@ class City(object):
             return np.array([grid_x, grid_y])
         
         return np.column_stack((grid_x, grid_y))
+    
+    def one_hot_encode(self, vector_idx):
+        """One hot encodes a vector index.
+
+        Args:
+            vector_idx (np.array): the vector index to be one hot encoded.
+
+        Returns:
+            np.array: one hot encoded vector.
+        """
+        one_hot = np.zeros(self.grid_size)
+        one_hot[vector_idx] = 1
+        return one_hot
         
     def process_lines(self, lines):
         """Creates a list of tensors for each line, from given grid indices. Used to create line/segment representations of metro lines.
