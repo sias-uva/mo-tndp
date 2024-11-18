@@ -164,12 +164,14 @@ class MOTNDP(gym.Env):
         )
         return action_mask[action] == 1
 
-    def reset(self, seed=None, loc=None):
+    def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
+        loc = options.get('loc') if options else None
+
         # loc argument supersedes self.starting_loc
-        starting_loc = loc if loc else self.starting_loc
+        starting_loc = loc if loc is not None else self.starting_loc
         if starting_loc:
             if type(starting_loc) == tuple:
                 starting_loc = np.array([starting_loc[0], starting_loc[1]])
