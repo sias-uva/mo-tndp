@@ -237,7 +237,7 @@ class MOTNDP(gym.Env):
             # Update the agent's location
             self._update_agent_location(new_location)
             # Update the action mask
-            self._update_action_mask(self._agent_location, action)
+            self._update_action_mask(self._agent_location)
         else:
             raise Exception("Not allowed action was taken. Make sure you apply the constraints to the action selection.")
             # reward = np.zeros(self.nr_groups)
