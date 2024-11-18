@@ -147,7 +147,7 @@ class MOTNDP(gym.Env):
             new_location (_type_): _description_
         """
         self._loc_grid_coordinates = new_location
-        self._loc_grid_index = self.city.grid_to_vector(self._loc_grid_coordinates[None, :]).item()
+        self._loc_grid_index = self.city.grid_to_index(self._loc_grid_coordinates[None, :]).item()
 
         
     def _update_action_mask(self, location):
@@ -207,8 +207,8 @@ class MOTNDP(gym.Env):
             self.stations_placed += 1
 
             # We add a new dimension to the agent's location to match grid_to_vector's generalization
-            from_idx = self.city.grid_to_vector(self._loc_grid_coordinates[None, :]).item()
-            to_idx = self.city.grid_to_vector(new_location[None, :]).item()
+            from_idx = self.city.grid_to_index(self._loc_grid_coordinates[None, :]).item()
+            to_idx = self.city.grid_to_index(new_location[None, :]).item()
             reward, sat_od_pairs = self._calculate_reward([from_idx, to_idx])
 
             # Update the covered segments and cells, based on sat_od_pairs

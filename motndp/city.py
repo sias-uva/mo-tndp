@@ -30,47 +30,47 @@ def matrix_from_file(path, size_x, size_y):
 class City(object):
     """The City Grid environment the agent learns from."""
 
-    def grid_to_vector(self, grid_idx):
-        """Converts grid indices(x, y) to a vector index (x^).
+    def grid_to_index(self, grid_coordinates):
+        """Converts grid coordinates (x, y) to a single index (x^).
 
         Args:
-            grid_idx (np.array): the grid indices to be converted to vector indices: [[x1, y1], [x2, y2], ...]
+            grid_coordinates (np.array): the grid coordinates to be converted to indices: [[x1, y1], [x2, y2], ...]
 
         Returns:
-            np.array: Converted vector.
+            np.array: converted vector indices.
         """
-        v_idx = grid_idx[:, 0] * self.grid_y_size + grid_idx[:, 1]
-        return v_idx
+        grid_idx = grid_coordinates[:, 0] * self.grid_y_size + grid_coordinates[:, 1]
+        return grid_idx
 
-    def vector_to_grid(self, vector_idx):
-        """Converts vector index (x^2) to grid indices (x, y)
+    def index_to_grid(self, grid_idx):
+        """Converts a grid index to grid coordinates (x, y).
 
         Args:
-            vector_idx (np.array): the vector index to be converted to grid indices: x
+            grid_idx (np.array or int): the grid index to be converted to grid coordinates.
 
         Returns:
-            np.array: covnerted grid index.
+            np.array: converted grid coordinates.
         """
 
-        grid_x = (vector_idx // self.grid_y_size)
-        grid_y = (vector_idx % self.grid_y_size)
+        grid_x = (grid_idx // self.grid_y_size)
+        grid_y = (grid_idx % self.grid_y_size)
 
-        if isinstance(vector_idx, np.int64):
+        if isinstance(grid_idx, np.int64):
             return np.array([grid_x, grid_y])
         
         return np.column_stack((grid_x, grid_y))
     
-    def one_hot_encode(self, vector_idx):
-        """One hot encodes a vector index.
+    def one_hot_encode(self, grid_idx):
+        """One hot encodes a grid index.
 
         Args:
-            vector_idx (np.array): the vector index to be one hot encoded.
+            grid_idx (np.array): the grid index to be one hot encoded.
 
         Returns:
             np.array: one hot encoded vector.
         """
         one_hot = np.zeros(self.grid_size)
-        one_hot[vector_idx] = 1
+        one_hot[grid_idx] = 1
         return one_hot
         
     def process_lines(self, lines):
@@ -86,7 +86,7 @@ class City(object):
         for l in lines:
             l = np.array(l).astype(np.int64)
             # Convert grid indices (x,y) to vector indices (x^)
-            l = self.grid_to_vector(l)
+            l = self.grid_to_index(l)
             processed_lines.append(l)
         return processed_lines
     
@@ -98,7 +98,7 @@ class City(object):
         """
         agg_od_g = np.zeros((self.grid_x_size, self.grid_y_size))
         for i in range(self.grid_size):
-            g = self.vector_to_grid(np.array([i]))[0]
+            g = self.index_to_grid(np.array([i]))[0]
             agg_od_g[g[0], g[1]] = np.sum(self.od_mx[i])
 
         return agg_od_g
@@ -252,7 +252,7 @@ class City(object):
             self.group_od_mx = np.zeros((len(self.groups), self.grid_size, self.grid_size))
             for i, g in enumerate(self.groups):
                 group_mask = np.zeros(self.od_mx.shape)
-                group_squares = self.grid_to_vector(np.transpose(np.nonzero(self.grid_groups == g)))
+                group_squares = self.grid_to_index(np.transpose(np.nonzero(self.grid_groups == g)))
                 # Original OD matrix is symmetrical, so group OD matrices should also be symmetrical.
                 group_mask[group_squares, :] = 1
                 group_mask[:, group_squares] = 1
