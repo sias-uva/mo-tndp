@@ -120,7 +120,7 @@ class MOTNDP(gym.Env):
         return {
             "segments": self.covered_segments,
             "action_mask": self.action_mask,
-            "covered_cells_gid": self.covered_cells_gid,
+            "covered_cells_coordinates": self.covered_cells_coordinates,
             "location_grid_coordinates": self._loc_grid_coordinates,
             "location_grid_index": self._loc_grid_index,
         }
@@ -137,7 +137,7 @@ class MOTNDP(gym.Env):
         segment = np.asarray(segment)
         if self.chained_reward:
             # Convert covered cells to numpy array (if not already)
-            cells_to_chain = np.asarray(self.city.grid_to_index(np.array(self.covered_cells_gid)))
+            cells_to_chain = np.asarray(self.city.grid_to_index(np.array(self.covered_cells_coordinates)))
 
             # Get stations connected to the new segment
             connected_stations = self.city.connections_with_existing_lines(segment)
@@ -191,13 +191,13 @@ class MOTNDP(gym.Env):
         # Apply action mask based on the location of the agent (it should stay inside the grid) & previously visited cells (it should not visit the same cell twice)
         possible_locations = location + ACTION_TO_DIRECTION
         self.action_mask = self.mask_actions(
-            location, possible_locations, self.covered_cells_gid
+            location, possible_locations, self.covered_cells_coordinates
         )
 
     def is_action_allowed(self, location, action):
         possible_locations = location + ACTION_TO_DIRECTION
         action_mask = self.mask_actions(
-            location, possible_locations, self.covered_cells_gid
+            location, possible_locations, self.covered_cells_coordinates
         )
         return action_mask[action] == 1
 
@@ -221,7 +221,7 @@ class MOTNDP(gym.Env):
             self._update_agent_location(np.array([agent_x, agent_y]))
             
         self.stations_placed = 1
-        self.covered_cells_gid = [self._loc_grid_coordinates]
+        self.covered_cells_coordinates = [self._loc_grid_coordinates]
         # covered segments in the grid (pairs of cells)
         self.covered_segments = []
         # Stations from the existing lines that are connected to the line that the agent is currently building.
@@ -257,7 +257,7 @@ class MOTNDP(gym.Env):
                     pair[::-1].tolist()
                 )  # add the reverse OD pair
 
-            self.covered_cells_gid.append(new_location)
+            self.covered_cells_coordinates.append(new_location)
 
             # Update the agent's location
             self._update_agent_location(new_location)
