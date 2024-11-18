@@ -86,7 +86,6 @@ class MOTNDP(gym.Env):
             "covered_cells_gid": self.covered_cells_gid,
             "location_grid_coordinates": self._loc_grid_coordinates,
             "location_grid_index": self._loc_grid_index,
-            "location_one_hot": self._loc_one_hot,
         }
 
     def _calculate_reward(self, segment):
@@ -142,15 +141,13 @@ class MOTNDP(gym.Env):
     def _update_agent_location(self, new_location):
         """Given the new location of the agent in grid coordinates (x, y), update a number of internal variables.
         _loc_grid_coordinates: the new location of the agent in grid coordinates (x, y)
-        _loc_grid_index: the new location of the agent as a discrete discrete index (0,0) -> 0, (0,1) -> 1, ....
-        _loc_one_hot: the new location of the agent as a one-hot vector.
+        _loc_grid_index: the new location of the agent as a discrete index (0,0) -> 0, (0,1) -> 1, ....
 
         Args:
             new_location (_type_): _description_
         """
         self._loc_grid_coordinates = new_location
         self._loc_grid_index = self.city.grid_to_vector(self._loc_grid_coordinates[None, :]).item()
-        self._loc_one_hot = self.city.one_hot_encode(self._loc_grid_index)
 
         
     def _update_action_mask(self, location):
