@@ -10,6 +10,54 @@ ACTION_TO_DIRECTION = np.array(
 )
 
 class MOTNDP(gym.Env):
+    """
+    ## Description
+    The Multi-Objective Transport Network Design Problem (MOTNDP) is a combinatorial optimization problem that involves designing the optimal transport line in a city to meet travel demand between various locations.
+
+    The MOTNDP environment is a highly modular environment that allows for the creation of different types of transport network design problems. 
+    In this environemnt, an agent is tasked with placing stations within a city represented as a grid. Episodes start in a cell, and the agent can move between adjacent cells to place new stations. 
+    The environment is based on the City object, which contains the city grid and group definitions for each cell, and the Constraints object, which contains the constraints on agent's movement in the grid and can be used to mask actions, creating different types of transport lines, such as straight lines, curves, or loops.
+    Each grid cell represents a location associated with a specific group. The reward reflects the total OD demand satisfied for each group, either in absolute or percentage terms.
+
+    ## Observation Space
+    The observation space is a multi-discrete space with two dimensions: the x and y coordinates of the agent in the grid. Grid size is defined by the City object.
+
+    ## Action Space
+    The actions is a discrete space where:
+    - 0: walk up
+    - 1: walk up-right
+    - 2: walk right
+    - 3: walk down-right
+    - 4: walk down
+    - 5: walk down-left
+    - 6: walk left
+    - 7: walk up-left
+    At every step, the agent can move to one of the 8 adjacent cells, as long as the movement is allowed by the action mask.
+    When an agent moves to a new cell, it places a station in the grid, connecting the previous cell with the new one.
+
+    ## Reward Space
+    The reward is a vector of length `nr_groups` (number of groups in the city). The reward reflects the total OD demand satisfied for each group, either in absolute or percentage terms.
+    The type of reward can be set with the `od_type` argument: 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
+
+    ## Starting State
+    The starting state is the initial location of the agent in the grid. The starting location can be set with the `starting_loc` argument. If not set, the starting location is chosen randomly.
+
+    ## Episode Termination
+    An episode terminates when the agent has placed all stations under the budget or when there are no more actions to take.
+
+    ## Arguments
+    - city (City): City object that contains the grid and the groups.
+    - constraints (Constraints): Transport constraints object with the constraints on movement in the grid.
+    - nr_stations (int): Episode length. Total number of stations to place (each station is an episode step).
+    - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
+    - od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
+    - chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
+    - render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
+
+    ## Cite
+    This environment is based on the following paper: TODO Add paper here
+    """
+    
     # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     metadata = {"render_modes": ["rgb_array"]}
 
@@ -48,15 +96,6 @@ class MOTNDP(gym.Env):
 
         self.observation_space = spaces.MultiDiscrete([city.grid_x_size, city.grid_y_size])
 
-        # We have 8 actions, corresponding to
-        # 0: walk up
-        # 1: walk up-right
-        # 2: walk right
-        # 3: walk down-right
-        # 4: walk down
-        # 5: walk down-left
-        # 6: walk left
-        # 7: walk up-left
         self.action_space = spaces.Discrete(8)
         # Allowed actions are updated at each step, based on the current location
         self.action_mask = np.ones(self.action_space.n, dtype=np.int8)
