@@ -72,9 +72,7 @@ class MOTNDP(gym.Env):
             low_reward = np.zeros(self.nr_groups)
             high_reward = self.city.group_od_mx.sum(axis=(1, 2))
 
-        self.reward_space = spaces.Box(
-            low=np.float32(low_reward), high=np.float32(high_reward), dtype=np.float32
-        )
+        self.reward_space = spaces.Box(low=np.float32(low_reward), high=np.float32(high_reward), dtype=np.float32)
 
     def _get_obs(self):
         return self._loc_grid_coordinates
