@@ -52,9 +52,10 @@ class MOTNDP(gym.Env):
     - city (City): City object that contains the grid and the groups.
     - constraints (Constraints): Transport constraints object with the constraints on movement in the grid.
     - nr_stations (int): Episode length. Total number of stations to place (each station is an episode step).
-    - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
+    - state_representation (str): State representation. Can be 'grid_coordinates' (returns the agent's location in grid coordinates), 'grid_index' (scalar index of grid coordinates) or 'one_hot' (one-hot vector).
     - od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
     - chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
+    - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
     - render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
 
     ## Cite
