@@ -20,7 +20,10 @@ class MOTNDP(gym.Env):
     Each grid cell represents a location associated with a specific group. The reward reflects the total OD demand satisfied for each group, either in absolute or percentage terms.
 
     ## Observation Space
-    The observation space is a multi-discrete space with two dimensions: the x and y coordinates of the agent in the grid. Grid size is defined by the City object.
+    The observation space is flexible and can be set with the `state_representation` argument. It can be:
+    - 'grid_coordinates': the agent's location in grid coordinates (x, y). For 'grid_coordinates', the observation space is a MultiDiscrete space with two dimensions: [grid_x_size, grid_y_size].
+    - 'grid_index': the agent's location as a scalar index (0,0) -> 0, (0,1) -> 1, ..... For 'grid_index', the observation space is a Discrete space with the size of the grid.
+    - 'one_hot': a one-hot vector of the agent's location in the grid. For 'one_hot', the observation space is a Box space with the shape of the grid.
 
     ## Action Space
     The actions is a discrete space where:
