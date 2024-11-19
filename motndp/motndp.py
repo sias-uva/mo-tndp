@@ -66,9 +66,10 @@ class MOTNDP(gym.Env):
         city: City,
         constraints: Constraints,
         nr_stations: int,
-        starting_loc=None,
+        state_representation="grid_coordinates",
         od_type="pct",
         chained_reward=False,
+        starting_loc=None,
         render_mode=None,
     ):
         """
@@ -76,9 +77,10 @@ class MOTNDP(gym.Env):
             city (City): City object that contains the grid and the groups.
             constraints (Constraints): Transport constraints object with the constraints on movement in the grid.
             nr_stations (int): Episode length. Total number of stations to place (each station is an episode step).
-            starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
+            state_representation (str): State representation. Can be 'grid_coordinates' (returns the agent's location in grid coordinates), 'grid_index' (scalar index of grid coordinates) or 'one_hot' (one-hot vector).
             od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
             chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
+            starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
             render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
         """
 
@@ -94,7 +96,13 @@ class MOTNDP(gym.Env):
         # If chained_reward is true, the reward received after the second action will be the OD between 2-3 AND 1-3, because station 1 and 3 are now connected (and therefore their demand is deemed satisfied).
         self.chained_reward = chained_reward
 
-        self.observation_space = spaces.MultiDiscrete([city.grid_x_size, city.grid_y_size])
+        self.state_representation = state_representation
+        if state_representation == "grid_coordinates":
+            self.observation_space = spaces.MultiDiscrete([city.grid_x_size, city.grid_y_size])
+        elif state_representation == "grid_index" or state_representation == "one_hot":
+            self.observation_space = spaces.Discrete(city.grid_size)
+        elif state_representation == "one_hot":
+            self.observation_space = spaces.Box(low=0, high=1, shape=(city.grid_size,), dtype=np.int64)
 
         self.action_space = spaces.Discrete(8)
         # Allowed actions are updated at each step, based on the current location
@@ -112,9 +120,14 @@ class MOTNDP(gym.Env):
             high_reward = self.city.group_od_mx.sum(axis=(1, 2))
 
         self.reward_space = spaces.Box(low=np.float32(low_reward), high=np.float32(high_reward), dtype=np.float32)
-
-    def _get_obs(self):
-        return self._loc_grid_coordinates
+        
+    def get_agent_location(self, representation="grid_coordinates"):
+        if representation == "grid_coordinates":
+            return self._loc_grid_coordinates
+        elif representation == "grid_index":
+            return self._loc_grid_index
+        elif representation == "one_hot":
+            return self.city.grid_to_one_hot(self._loc_grid_coordinates[None, :])
 
     def _get_info(self):
         return {
@@ -193,7 +206,7 @@ class MOTNDP(gym.Env):
         self.action_mask = self.mask_actions(
             location, possible_locations, self.covered_cells_coordinates
         )
-
+    
     def is_action_allowed(self, location, action):
         possible_locations = location + ACTION_TO_DIRECTION
         action_mask = self.mask_actions(
@@ -228,7 +241,7 @@ class MOTNDP(gym.Env):
         self.connections_with_existing_lines = set()
 
         self._update_action_mask(self._loc_grid_coordinates)
-        observation = self._get_obs()
+        observation = self.get_agent_location(self.state_representation)
 
         return observation, self._get_info()
 
@@ -273,7 +286,7 @@ class MOTNDP(gym.Env):
             self.stations_placed >= self.nr_stations or np.sum(self.action_mask) == 0
         )
 
-        observation = self._get_obs()
+        observation = self.get_agent_location(self.state_representation)
         info = self._get_info()
 
         # if self.render_mode == "human":
