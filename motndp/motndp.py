@@ -323,44 +323,43 @@ class MOTNDP(gym.Env):
         return observation, reward, terminated, False, info
 
     def render(self, reward=None):
-        cell_size = 20  # Define cell size as a variable
+        # Calculate cell size based on window size and grid size
+        screen_width, screen_height = 800, 800
+        legend_width = 200  # Width for the legend
+        grid_width = screen_width - legend_width
+        grid_height = screen_height
+        cell_size = min(grid_width // self.city.grid_x_size, grid_height // self.city.grid_y_size)
+        window_width = cell_size * self.city.grid_x_size + legend_width
+        window_height = cell_size * self.city.grid_y_size
 
-        # from: https://github.com/Farama-Foundation/MO-Gymnasium/blob/main/mo_gymnasium/envs/deep_sea_treasure/deep_sea_treasure.py#L184
         if self.render_mode is None:
             assert self.spec is not None
             gym.logger.warn(
-            "You are calling render method without specifying any render mode. "
-            "You can specify the render_mode at initialization, "
-            f'e.g. mo_gym.make("{self.spec.id}", render_mode="rgb_array")'
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. mo_gym.make("{self.spec.id}", render_mode="rgb_array")'
             )
             return
-        
+
         if self.window is None:
             pygame.init()
-            display_info = pygame.display.Info()
-            screen_width, screen_height = display_info.current_w, display_info.current_h
-            legend_width = 300  # Width for the legend
-            window_width = min(self.city.grid_x_size * cell_size + legend_width, screen_width)
-            window_height = min(self.city.grid_y_size * cell_size, screen_height)
-            self.window = pygame.display.set_mode((window_width, window_height))
+            self.window = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
             if self.render_mode == "human":
                 pygame.display.init()
-            self.window = pygame.display.set_mode((window_width, window_height))
+            self.window = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
-            
+
         self.window.fill((255, 255, 255))
         # Define colors for each group once
         group_colors = {}
         for group_id in self.city.groups:
-            # Create shades of blue for each group
-            blue_shade = 255 - int((group_id / self.nr_groups) * 100)  # Vary blue intensity
-            group_colors[group_id] = (0, 0, blue_shade)  # RGBA with lower opacity
+            blue_shade = 255 - int((group_id / self.nr_groups) * 100)
+            group_colors[group_id] = (0, 0, blue_shade)
 
         for i in range(self.city.grid_x_size):
             for j in range(self.city.grid_y_size):
                 group_id = self.city.grid_groups[i, j]
-                # if group_id is nan, the cell is white 
                 if np.isnan(group_id):
                     continue
                 color = group_colors[group_id]
@@ -368,16 +367,15 @@ class MOTNDP(gym.Env):
                 surface.fill(color)
                 self.window.blit(surface, (j * cell_size, i * cell_size))
 
-        # Draw the legend
         legend_x = self.city.grid_x_size * cell_size + 10
         legend_y = 10
         font = pygame.font.SysFont(None, 24)
         for group_id, color in group_colors.items():
-            pygame.draw.rect(self.window, color[:3], (legend_x, legend_y, cell_size, cell_size))  # Use RGB part of the color
+            pygame.draw.rect(self.window, color[:3], (legend_x, legend_y, cell_size, cell_size))
             text = font.render(f'Group {group_id}', True, (0, 0, 0))
             self.window.blit(text, (legend_x + cell_size + 5, legend_y))
             legend_y += cell_size + 5
-        # Render legend for existing lines
+
         if self.city.existing_lines:
             pygame.draw.circle(self.window, (255, 0, 0), (legend_x + 10, legend_y + 10), 10)
             pygame.draw.line(self.window, (255, 0, 0), (legend_x + 10, legend_y + 10), (legend_x + 30, legend_y + 10), 5)
@@ -385,73 +383,67 @@ class MOTNDP(gym.Env):
             self.window.blit(text, (legend_x + 40, legend_y))
             legend_y += cell_size + 5
 
-        # Render legend for agent location
         pygame.draw.polygon(self.window, (255, 165, 0), [(legend_x + 10, legend_y), (legend_x, legend_y + 10), (legend_x + 20, legend_y + 10)])
         text = font.render('Agent Location', True, (0, 0, 0))
         self.window.blit(text, (legend_x + 40, legend_y))
         legend_y += cell_size + 5
-                    
-        # Below the legend, show with text the current location of the agent
+
         font = pygame.font.SysFont(None, 18)
         text = font.render(f'Agent Loc: {self._loc_grid_coordinates}', True, (0, 0, 0))
         self.window.blit(text, (legend_x, legend_y + 20))
-        
-        # Below the agent location, show with text the episode reward
+
         font = pygame.font.SysFont(None, 18)
         if reward is not None:
             for group_id, group_reward in enumerate(reward):
                 text = font.render(f'Reward Group {group_id}: {group_reward:.2f}', True, (0, 0, 0))
                 self.window.blit(text, (legend_x, legend_y + 60 + group_id * 20))
-        
-        # Draw the existing lines using red circles and red lines
+
         for line in self.city.existing_lines:
             for i, cell in enumerate(line):
-                # convert grid index to grid coordinates
                 cell = self.city.index_to_grid(cell)[0]
                 pygame.draw.circle(
                     self.window,
-                    (255, 0, 0),  # Red color for existing lines
+                    (255, 0, 0),
                     (cell[1] * cell_size + cell_size // 2, cell[0] * cell_size + cell_size // 2),
-                    10,
+                    cell_size // 2,
                 )
                 if i > 0:
                     prev_cell = line[i - 1]
                     prev_cell = self.city.index_to_grid(prev_cell)[0]
                     pygame.draw.line(
                         self.window,
-                        (255, 0, 0),  # Red color for the line
+                        (255, 0, 0),
                         (prev_cell[1] * cell_size + cell_size // 2, prev_cell[0] * cell_size + cell_size // 2),
                         (cell[1] * cell_size + cell_size // 2, cell[0] * cell_size + cell_size // 2),
-                        5,  # Line thickness
+                        cell_size // 5,
                     )
 
         for i, cell in enumerate(self.covered_cells_coordinates):
             pygame.draw.circle(
-            self.window,
-            (0, 0, 0),  # Black color for covered cells
-            (cell[1] * cell_size + cell_size // 2, cell[0] * cell_size + cell_size // 2),
-            10,
+                self.window,
+                (0, 0, 0),
+                (cell[1] * cell_size + cell_size // 2, cell[0] * cell_size + cell_size // 2),
+                cell_size // 2,
             )
             if i > 0:
                 prev_cell = self.covered_cells_coordinates[i - 1]
                 pygame.draw.line(
                     self.window,
-                    (0, 0, 0),  # Black color for the line
+                    (0, 0, 0),
                     (prev_cell[1] * cell_size + cell_size // 2, prev_cell[0] * cell_size + cell_size // 2),
                     (cell[1] * cell_size + cell_size // 2, cell[0] * cell_size + cell_size // 2),
-                    5,  # Line thickness
+                    cell_size // 5,
                 )
-            
-        # Draw a triangle to show the agent's location
+
         agent_x = self._loc_grid_coordinates[1] * cell_size + cell_size // 2
         agent_y = self._loc_grid_coordinates[0] * cell_size + cell_size // 2
         triangle_points = [
-            (agent_x, agent_y - 10),  # Top point
-            (agent_x - 10, agent_y + 10),  # Bottom left point
-            (agent_x + 10, agent_y + 10),  # Bottom right point
+            (agent_x, agent_y - cell_size // 2),
+            (agent_x - cell_size // 2, agent_y + cell_size // 2),
+            (agent_x + cell_size // 2, agent_y + cell_size // 2),
         ]
         pygame.draw.polygon(self.window, (255, 165, 0), triangle_points)
-            
+
         if self.render_mode == "human":
             pygame.event.pump()
             pygame.display.update()
