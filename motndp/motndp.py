@@ -323,8 +323,7 @@ class MOTNDP(gym.Env):
         return observation, reward, terminated, False, info
 
     def render(self, reward=None):
-        # Calculate cell size based on window size and grid size
-        screen_width, screen_height = 800, 800
+        screen_width, screen_height = 1200, 800
         legend_width = 200  # Width for the legend
         grid_width = screen_width - legend_width
         grid_height = screen_height
@@ -388,11 +387,7 @@ class MOTNDP(gym.Env):
         self.window.blit(text, (legend_x + 40, legend_y))
         legend_y += cell_size + 5
 
-        font = pygame.font.SysFont(None, 18)
-        text = font.render(f'Agent Loc: {self._loc_grid_coordinates}', True, (0, 0, 0))
-        self.window.blit(text, (legend_x, legend_y + 20))
-
-        font = pygame.font.SysFont(None, 18)
+        font = pygame.font.SysFont(None, 21)
         if reward is not None:
             for group_id, group_reward in enumerate(reward):
                 text = font.render(f'Reward Group {group_id}: {group_reward:.2f}', True, (0, 0, 0))
