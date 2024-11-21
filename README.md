@@ -1,5 +1,5 @@
 # Multi-Objective Transport Network Design Problem
-A Gymnasium environment to design public transport networks, by satisfying the OD-flows of multiple socio-economic groups (objectives). 
+A Gymnasium environment to design public transport networks, by satisfying the Origin-Destination demand of multiple socio-economic groups (objectives). 
 
 ![animation of transport network designer agent](/resources/motndp.gif "MOTNDP")
 
