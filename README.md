@@ -28,6 +28,7 @@ The actions is a discrete space where:
 - 5: walk down-left
 - 6: walk left
 - 7: walk up-left
+
 At every step, the agent can move to one of the 8 adjacent cells, as long as the movement is allowed by the action mask.
 When an agent moves to a new cell, it places a station in the grid, connecting the previous cell with the new one.
 
@@ -36,7 +37,7 @@ The reward is a vector of length `nr_groups` (number of groups in the city). The
 The type of reward can be set with the `od_type` argument: 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
 
 ## Starting State
-The starting state is the initial location of the agent in the grid. The starting location can be set with the `starting_loc` argument. If not set, the starting location is chosen randomly.
+The starting state is the initial location of the agent in the grid. The initial location can be set with the `starting_loc` argument. If not set, the starting location is chosen randomly.
 
 ## Episode Termination
 An episode terminates when the agent has placed all stations under the budget or when there are no more actions to take.
