@@ -58,7 +58,7 @@ class MOTNDP(gym.Env):
     - od_type (str): Type of Origin Destination metric. Can be 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
     - chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
     - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
-    - render_mode (str): RENDERING IS NOT IMPLEMENTED YET.
+    - render_mode (str): if 'human', the environment will render a pygame window with the agent's movement and the covered cells.
 
     ## Cite
     This environment is based on the following paper: TODO Add paper here
@@ -345,7 +345,10 @@ class MOTNDP(gym.Env):
             self.window = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
             if self.render_mode == "human":
                 pygame.display.init()
-            self.window = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
+                pygame.display.set_caption("MOTNDP")
+                self.window = pygame.display.set_mode((window_width, window_height), pygame.RESIZABLE)
+            else:
+                self.window = pygame.Surface((window_width, window_height))
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
@@ -443,6 +446,8 @@ class MOTNDP(gym.Env):
             pygame.event.pump()
             pygame.display.update()
             self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return pygame.surfarray.array3d(self.window)
 
     def close(self):
         if self.window is not None:
