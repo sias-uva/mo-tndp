@@ -1,6 +1,8 @@
 # Multi-Objective Transport Network Design Problem
 A Gymnasium environment to design public transport networks, by satisfying the OD-flows of multiple socio-economic groups (objectives). 
 
+![animation of transport network designer agent](/resources/motndp.gif "MOTNDP")
+
 
 ## Description
 The Multi-Objective Transport Network Design Problem (MOTNDP) is a combinatorial optimization problem that involves designing the optimal transport line in a city to meet travel demand between various locations.
