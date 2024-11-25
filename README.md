@@ -54,3 +54,10 @@ An episode terminates when the agent has placed all stations under the budget or
 - chained_reward (bool): If True, each new station will receive an additional reward based not only on the ODs covered between the immediate previous station, but also those before.
 - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
 - render_mode (str): if 'human', the environment will render a pygame window with the agent's movement and the covered cells.
+
+## City Environments
+| City                    | Nr. Groups | Data Source                                             |
+|-------------------------|------------|---------------------------------------------------------|
+| Amsterdam (Netherlands) | 1-10       | [Paper pending]                                         |
+| Xi'an (China)           | 1-10       | [Paper](https://dl.acm.org/doi/10.1145/3394486.3403315) |
+| Dilemma (Synthetic)     | 2          | [Paper pending]                                         |
