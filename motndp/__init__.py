@@ -1,1 +1,1 @@
-from motndp.motndp import MOTNDP
+from .motndp import MOTNDP

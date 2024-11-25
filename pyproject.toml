@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "motndp"
+description="Multi-Objective Transport Network Design Problem gymnasium environment."
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">= 3.8"
+authors = [{ name = "Dimitris Michailidis", email = "dimichai@outlook.com" }]
+license = { text = "MIT License" }
+keywords = ["Reinforcement Learning", "Multi-Objective", "RL", "AI", "Tranportation Network"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    'Intended Audience :: Science/Research',
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+]
+dependencies = [
+    "gymnasium >=1.0.0",
+    "numpy >=1.21.0,<2.0",
+    "pygame >=2.1.3",
+]
+
+[tool.setuptools.packages.find]
+include = ["motndp", "motndp.*"]
+
+[project.urls]
+Repository = "https://github.com/dimichai/mo-tndp"
