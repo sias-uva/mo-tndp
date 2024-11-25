@@ -1,3 +1,6 @@
+[![Python](https://img.shields.io/pypi/pyversions/motndp.svg)](https://badge.fury.io/py/motndp)
+[![PyPI](https://badge.fury.io/py/motndp.svg)](https://badge.fury.io/py/motndp)
+
 # Multi-Objective Transport Network Design Problem
 A Gymnasium environment to design public transport networks, by satisfying the Origin-Destination demand of multiple socio-economic groups (objectives). 
 
