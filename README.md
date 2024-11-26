@@ -6,6 +6,11 @@ A Gymnasium environment to design public transport networks, by satisfying the O
 
 ![animation of transport network designer agent](/resources/motndp.gif "MOTNDP")
 
+## Install
+```bash
+pip install motndp
+```
+Note: this includes all the structure to run MOTNDP environments, but not the city data. To run the provided cities, you need to download the 'cities' folder of this repository, or add your own city data. Read on to learn more about how to structure your data.
 
 ## Description
 The Multi-Objective Transport Network Design Problem (MOTNDP) is a combinatorial optimization problem that involves designing the optimal transport line in a city to meet travel demand between various locations.
@@ -55,13 +60,47 @@ An episode terminates when the agent has placed all stations under the budget or
 - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
 - render_mode (str): if 'human', the environment will render a pygame window with the agent's movement and the covered cells.
 
-## Install
-```bash
-pip install motndp
-```
-Note: this includes all the structure to run MOTNDP environments, but not the city data. To run the provided cities, you need to download the 'cities' folder of this repository, or add your own city data. Read on to learn more about how to structure your data.
+## Building Blocks
+![motndp structure](/resources/motndp_structure.jpg "MOTNDP")
+MOTNDP is a modular environment designed to train transport planning agents in any city, provided the necessary data is available. It relies on two key components: the City and Constraints objects.
+- The City object calculates the satisfied origin-destination (OD) demand and determines connections with existing transport lines.
+- The Constraints object defines the allowed agent actions at each timestep, creating action masks that respect the desired rules and constraints.
 
-## City Environments
+To create an MOTNDP environment, you need to define and specify these two objects.
+### City
+The City object encapsulates all the information about the city required for transport planning. It includes:
+- OD matrix: Representing the demand between origin and destination cells in the grid.
+- Group definitions: Defining the group membership of each cell in the city grid.
+- Configuration: Including the city grid size and details of existing transport lines (for network expansion scenarios).
+
+The City also handles key logic for reward calculation through the satisfied_od_mask() function. This function takes a transport segment (connection between two grid cells) as input and returns the satisfied OD pairs. Additionally, it can include an excluded_od_segments list, which specifies segments that yield zero rewards (e.g., areas where transport cannot be built or regions where transport lines are discouraged).
+
+Additional Features:
+
+- Existing Transport Line Integration: The City object can calculate connections with existing lines, boosting the reward by capturing additional satisfied OD flows.
+Directory Structure:
+
+A valid city directory should include the following files:
+- config.txt: Configuration file for the city.
+- od.txt: OD matrix data.
+- Group definition files: One or more files defining group membership for each cell.
+
+Note: The cities folder is not included in this package and must be downloaded separately. Example files are provided in the cities folder to guide you in setting up your data.
+
+### Constraints
+The Constraints object defines the set of allowed and disallowed actions at each timestep for the agent, enabling the creation of diverse transport line types. For example, metro lines often span long distances and follow straight, non-meandering paths. Other transport types may have different movement restrictions.
+
+Constraints expose an abstract mask_actions() function that you can implement to tailor the agent’s allowed actions.
+
+Example Constraints:
+- BasicConstraints: Prevents the agent from exiting the grid or revisiting previously visited cells.
+- MetroConstraints: Ensures the design of straight, one-directional lines without cyclical movements, mimicking the structure of most metro lines worldwide.
+- 
+Once the City and Constraints objects are provided, the MOTNDP environment can be used like any other mo_gym environment. It exposes standard functions such as reset(), step(action) and render().
+
+## Available City Environments
+I aim to gather data for various cities by referencing papers published on the topic. If you have data to contribute, feel free to reach out or open a pull request.
+
 | City                    | Nr. Groups | Data Source                                             |
 |-------------------------|------------|---------------------------------------------------------|
 | Amsterdam (Netherlands) | 1-10       | [Paper pending]                                         |
