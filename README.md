@@ -55,6 +55,12 @@ An episode terminates when the agent has placed all stations under the budget or
 - starting_loc (tuple): Set the default starting location of the agent in the grid. If None, the starting location is chosen randomly, or chosen in _reset().
 - render_mode (str): if 'human', the environment will render a pygame window with the agent's movement and the covered cells.
 
+## Install
+```bash
+pip install motndp
+```
+Note: this includes all the structure to run MOTNDP environments, but not the city data. To run the provided cities, you need to download the 'cities' folder of this repository, or add your own city data. Read on to learn more about how to structure your data.
+
 ## City Environments
 | City                    | Nr. Groups | Data Source                                             |
 |-------------------------|------------|---------------------------------------------------------|
