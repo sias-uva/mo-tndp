@@ -201,10 +201,6 @@ class City(object):
         # Build the normalized OD and SES matrices.
         self.od_mx = matrix_from_file(env_path / 'od.txt', self.grid_size, self.grid_size)
         self.od_mx = self.od_mx / np.max(self.od_mx)
-        try:
-            self.price_mx = matrix_from_file(env_path / 'average_house_price_gid.txt', self.grid_x_size, self.grid_y_size)
-        except FileNotFoundError:
-            print('Price matrix not available.')
             
         self.ignore_existing_lines = ignore_existing_lines
         # Read existing metro lines of the environment.
