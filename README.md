@@ -95,7 +95,7 @@ Constraints expose an abstract mask_actions() function that you can implement to
 Example Constraints:
 - BasicConstraints: Prevents the agent from exiting the grid or revisiting previously visited cells.
 - MetroConstraints: Ensures the design of straight, one-directional lines without cyclical movements, mimicking the structure of most metro lines worldwide.
-- 
+
 Once the City and Constraints objects are provided, the MOTNDP environment can be used like any other mo_gym environment. It exposes standard functions such as reset(), step(action) and render().
 
 ## Available City Environments
