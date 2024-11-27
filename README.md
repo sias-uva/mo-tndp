@@ -173,8 +173,8 @@ For an example of how tabular Q-learning is being used with MOTNDP, check out [t
 ## Available City Environments
 I aim to gather data for various cities by referencing papers published on the topic. If you have data to contribute, feel free to reach out or open a pull request.
 
-| City                    | Nr. Groups | Data Source                                             |
-|-------------------------|------------|---------------------------------------------------------|
-| Amsterdam (Netherlands) | 1-10       | [Paper pending]                                         |
-| Xi'an (China)           | 1-10       | [Paper](https://dl.acm.org/doi/10.1145/3394486.3403315) |
-| Dilemma (Synthetic)     | 2          | [Paper pending]                                         |
+| City                    | Nr. Groups | Sources                                                                                                                     | OD Data                                                                     |
+|-------------------------|------------|-----------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| Amsterdam (Netherlands) | 1-10       | [paper pending], [files](https://github.com/dimichai/mo-tndp/tree/main/cities/amsterdam)                                    | Estimated with [model](https://www.nature.com/articles/s41586-021-03480-9 ) |
+| Xi'an (China)           | 1-10       | [paper](https://dl.acm.org/doi/10.1145/3394486.3403315), [files](https://github.com/dimichai/mo-tndp/tree/main/cities/xian) | GPS                                                                         |
+| Dilemma (Toy example)     | 2          | [paper pending], [files](https://github.com/dimichai/mo-tndp/tree/main/cities/dilemma_5x5)                                  | Fake                                                                        |
