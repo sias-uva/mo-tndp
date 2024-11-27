@@ -22,6 +22,23 @@ In this environemnt, an agent is tasked with placing stations within a city repr
 The environment is based on the City object, which contains the city grid and group definitions for each cell, and the Constraints object, which contains the constraints on agent's movement in the grid and can be used to mask actions, creating different types of transport lines, such as straight lines, curves, or loops.
 Each grid cell represents a location associated with a specific group. The reward reflects the total OD demand satisfied for each group, either in absolute or percentage terms.
 
+## Table of Contents
+- [Multi-Objective Transport Network Design Problem](#multi-objective-transport-network-design-problem)
+  - [Install](#install)
+  - [Description](#description)
+  - [Table of Contents](#table-of-contents)
+  - [Observation Space](#observation-space)
+  - [Action Space](#action-space)
+  - [Reward Space](#reward-space)
+  - [Starting State](#starting-state)
+  - [Episode Termination](#episode-termination)
+  - [Arguments](#arguments)
+  - [Building Blocks](#building-blocks)
+    - [City](#city)
+    - [Constraints](#constraints)
+  - [Example](#example)
+  - [Available City Environments](#available-city-environments)
+
 ## Observation Space
 The observation space is flexible and can be set with the `state_representation` argument. It can be:
 - 'grid_coordinates': the agent's location in grid coordinates (x, y). For 'grid_coordinates', the observation space is a MultiDiscrete space with two dimensions: [grid_x_size, grid_y_size].
