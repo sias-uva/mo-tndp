@@ -102,6 +102,57 @@ Example Constraints:
 
 Once the City and Constraints objects are provided, the MOTNDP environment can be used like any other mo_gym environment. It exposes standard functions such as reset(), step(action) and render().
 
+## Example
+```python
+from pathlib import Path
+from motndp.city import City
+import gymnasium
+from gymnasium.envs.registration import register
+
+from motndp.constraints import MetroConstraints
+
+register(
+    id="motndp_dilemma-v0",
+    entry_point="motndp.motndp:MOTNDP"
+)
+
+if __name__ == '__main__':
+    dilemma_dir = Path(f"./cities/dilemma_5x5")
+    city = City(
+            dilemma_dir, 
+            groups_file="groups.txt",
+            ignore_existing_lines=True
+    )
+
+    nr_episodes = 100
+    nr_stations = 9
+    seed = 42
+    
+    env = gymnasium.make(
+        'motndp_dilemma-v0', 
+        city=city, 
+        constraints=MetroConstraints(city), 
+        nr_stations=nr_stations)
+
+    training_step = 0
+    for _ in range(nr_episodes):
+        state, info = env.reset()
+        while True:
+            env.render()
+            # Random policy -- Implement your own agent policy here
+            action = env.action_space.sample(mask=info['action_mask'])
+            new_state, reward, done, _, info = env.step(action)
+
+            training_step += 1
+            print(f'state: {state}, action: {action}, reward: {reward} new_state: {new_state}')
+
+            if done:
+                break
+
+            state = new_state
+```
+For an example of how tabular Q-learning is being used with MOTNDP, check out [this repository](https://github.com/dimichai/tabular-tndp).
+
 ## Available City Environments
 I aim to gather data for various cities by referencing papers published on the topic. If you have data to contribute, feel free to reach out or open a pull request.
 
