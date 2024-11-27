@@ -4,6 +4,8 @@
 # Multi-Objective Transport Network Design Problem
 A Gymnasium environment to design public transport networks, by satisfying the Origin-Destination demand of multiple socio-economic groups (objectives). 
 
+The environment can also be used for single-objective transport network design, by using one group.
+
 ![animation of transport network designer agent](/resources/motndp.gif "MOTNDP")
 
 ## Install
@@ -43,6 +45,8 @@ When an agent moves to a new cell, it places a station in the grid, connecting t
 ## Reward Space
 The reward is a vector of length `nr_groups` (number of groups in the city). The reward reflects the total OD demand satisfied for each group, either in absolute or percentage terms.
 The type of reward can be set with the `od_type` argument: 'pct' (returns the percentage of satisfied OD pairs for each group) or 'abs' (returns the absolute number of satisfied OD pairs for each group).
+
+Note that you can use MOTNDP to perform single objective transport network design, by assigning all grid cells to the same group and usign nr_groups=1. This will still return a vector reward, but with a single dimension, and you can then flatten it to get a scalar reward.
 
 ## Starting State
 The starting state is the initial location of the agent in the grid. The initial location can be set with the `starting_loc` argument. If not set, the starting location is chosen randomly.
