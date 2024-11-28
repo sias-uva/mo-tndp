@@ -38,6 +38,7 @@ Each grid cell represents a location associated with a specific group. The rewar
     - [Constraints](#constraints)
   - [Example](#example)
   - [Available City Environments](#available-city-environments)
+  - [Citing](#citing)
 
 ## Observation Space
 The observation space is flexible and can be set with the `state_representation` argument. It can be:
@@ -178,3 +179,16 @@ I aim to gather data for various cities by referencing papers published on the t
 | Amsterdam (Netherlands) | 1-10       | [paper](https://www.arxiv.org/abs/2411.18195), [files](https://github.com/dimichai/mo-tndp/tree/main/cities/amsterdam)                                    | Estimated with [model](https://www.nature.com/articles/s41586-021-03480-9 ) |
 | Xi'an (China)           | 1-10       | [paper](https://dl.acm.org/doi/10.1145/3394486.3403315), [files](https://github.com/dimichai/mo-tndp/tree/main/cities/xian) | GPS                                                                         |
 | Dilemma (Toy example)     | 2          | [paper](https://www.arxiv.org/abs/2411.18195), [files](https://github.com/dimichai/mo-tndp/tree/main/cities/dilemma_5x5)                                  | Fake                                                                        |
+
+
+## Citing
+If you use this environment in your paper, please cite:
+@misc{michailidis2024scalablemultiobjectivereinforcementlearning,
+      title={Scalable Multi-Objective Reinforcement Learning with Fairness Guarantees using Lorenz Dominance}, 
+      author={Dimitris Michailidis and Willem Röpke and Diederik M. Roijers and Sennay Ghebreab and Fernando P. Santos},
+      year={2024},
+      eprint={2411.18195},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2411.18195}, 
+}
