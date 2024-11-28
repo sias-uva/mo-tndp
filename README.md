@@ -182,6 +182,7 @@ I aim to gather data for various cities by referencing papers published on the t
 
 
 ## Citing
+```bibtex
 If you use this environment in your paper, please cite:
 @misc{michailidis2024scalablemultiobjectivereinforcementlearning,
       title={Scalable Multi-Objective Reinforcement Learning with Fairness Guarantees using Lorenz Dominance}, 
@@ -192,3 +193,4 @@ If you use this environment in your paper, please cite:
       primaryClass={cs.LG},
       url={https://arxiv.org/abs/2411.18195}, 
 }
+```
